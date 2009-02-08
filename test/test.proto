@@ -1,0 +1,8 @@
+package test;
+
+message Node {
+  required int32 id = 1;
+  required double latitude = 2;
+  required double longitude = 3;
+}
+
