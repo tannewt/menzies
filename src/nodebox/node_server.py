@@ -4,18 +4,18 @@ import sys
 sys.path.append('gen-py')
 sys.path.append('../common/gen-py')
 
-from way import WayServer
+from node import NodeServer
 
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
 
-from way_request_handler import WayRequestHandler
+from node_request_handler import NodeRequestHandler
 
-handler = WayRequestHandler()
-processor = WayServer.Processor(handler)
-transport = TSocket.TServerSocket(9090)
+handler = NodeRequestHandler()
+processor = NodeServer.Processor(handler)
+transport = TSocket.TServerSocket(9091)
 tfactory = TTransport.TBufferedTransportFactory()
 pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 
