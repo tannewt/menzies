@@ -79,7 +79,7 @@ class WayRequestHandler:
 
 		return None
 
-	def wayHistory(self, id):
+	def getWayHistory(self, id):
 		ways = []
 
 		cursor = self.db.cursor()
