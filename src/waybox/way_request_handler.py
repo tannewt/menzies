@@ -1,18 +1,11 @@
-
-import data
-
 from bsddb import db as bdb
 
-import thrift_wrapper
+import sys
+sys.path.append('../common')
+sys.path.append('../common/gen-py')
+from data.ttypes import *
 
-'''
-  data.Way getWay(1: i64 id, 2: optional i32 version, 3: optional bool full),
-  list<data.Way> getWays(1: optional list<i64> ids, 2: optional i64 node, 3: optional i64 relation),
-  i32 editWay(1: data.Way way),
-  i32 deleteWay(1: data.Way way),
-  i64 createWay(1: data.Way way),
-  list<data.Way> wayHistory(1: i64 id),
-'''
+import thrift_wrapper
 
 class WayRequestHandler:
 	def __init__(self):
@@ -24,10 +17,14 @@ class WayRequestHandler:
 
 	def getWay(self, id):
 		way = Way()
-		thrift_wrapper.from_string(way, self.db.get(id))
-		return way
+		data = self.db.get("%d"%id)
+		if data:
+			thrift_wrapper.from_string(way, data)
+			return way
+		else:
+			return None
 
-	def getWay(self, id, version):
+	def getWayVersion(self, id, version):
 		way = Way()
 
 		data = self.cursor.get(id, bdb.DB_SET)
@@ -37,7 +34,7 @@ class WayRequestHandler:
 			if way.version == version:
 				return way
 
-			data = self.cursor.get(id, bdb.DB_NEXT)
+			data = self.cursor.get(id, bdb.DB_NEXT_DUP)
 
 		# raise an exception
 
