@@ -1,0 +1,22 @@
+import sys
+import httplib
+
+OSM = "--osm" in sys.argv
+if OSM:
+  sys.argv.remove("--osm")
+
+if len(sys.argv)<3:
+  print sys.argv[0],"<server>","<port>"
+
+SERVER = sys.argv[1]
+PORT = sys.argv[2]
+
+# test create
+c = httplib.HTTPConnection(SERVER, PORT)
+node="""<osm><node id="156804" lat="61.8083953857422" lon="10.8497076034546" visible="true" timestamp="2005-07-30T14:27:12+01:00">
+   <tag k="tourism" v="hotel" />
+   <tag k="name" v="Cockroach Inn" />
+</node></osm>"""
+c.request("PUT", "/api/0.6/node/create", node)
+r = c.getresponse()
+print "node/create",r.status, r.reason, r.read()
