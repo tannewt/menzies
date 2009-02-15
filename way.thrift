@@ -1,7 +1,7 @@
 include "data.thrift"
 
 service WayServer {
-  data.Way getWay(1: i64 id),
+	data.Way getWay(1: i64 id),
 	data.Way getWayVersion(1: i64 id, 2: i32 version)
 	data.Osm getFullWay(1: i64 id),
 	list<data.Way> getWays(1: list<i64> ids),
