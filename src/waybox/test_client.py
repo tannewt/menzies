@@ -2,6 +2,7 @@
 
 import sys
 sys.path.append('gen-py')
+sys.path.append('../common/gen-py')
 
 from way import WayServer
 from way.ttypes import *
@@ -35,6 +36,7 @@ try:
 		way = Way()
 		way.id = 1
 		way.user = "jason"
+		way.nodes = [1,1,2,3,5,8,13]
 		print "created way:", client.createWay(way)
 
 	print "calling server for way '1'"
