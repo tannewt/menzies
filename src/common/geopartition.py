@@ -26,7 +26,44 @@ class GeoNode:
 	
 	def __repr__(self):
 		return "GeoNode("+",".join((str(self.lat),str(self.lon),str(self.v)))+")"
+
+from bsddb import db as bdb
+DB = bdb.DB()
+DB.set_flags(bdb.DB_DUP)
+DB.open("spatial.db","Index", bdb.DB_BTREE, bdb.DB_CREATE)
 		
+class BdbBinIter:
+	def __init__(self, key, d):
+		self._d = d
+		self.cursor = DB.cursor()
+		r = self.cursor.get(key, bdb.DB_SET)
+		self.i = 0
+		if r == None:
+			self.size = 0
+		else:
+			self.size = self.cursor.count()
+	
+	def next(self):
+		if self.i == 0:
+			key,value = self.cursor.current()
+		else:
+			key,value = self.cursor.next_dup()
+		self.i += 1
+		return eval(value)
+	
+	def remove(self):
+		v = self.cursor.current()
+		self.cursor.delete()
+		self._d()
+		#print "remove",v
+		return eval(v[1])
+	
+	def has_next(self):
+		return self.i < self.size - 1
+	
+	def __del__(self):
+		self.cursor.close()
+
 class BdbBin:
 	MAX = 100
 	def __init__(self,depth,num):
@@ -34,20 +71,22 @@ class BdbBin:
 		self.num = num
 		self.count = 0
 	
-	def put(self, value):
+	def put(self, num, value):
 		self.count += 1
+		#print "put",(str(self.num),(hex(num),value))
+		DB.put(str(self.num),str((num,value)))
 	
 	def get(self):
-		return [0]*self.count
+		return BdbBinIter(str(self.num),self._del)
 	
-	def remove(self, v):
+	def _del(self):
 		self.count -= 1
 	
 	def split(self):
 		return self.count>self.MAX
 	
 	def _str(self):
-		return "BdbBin " + hex(self.num) + " " + str(self.children)
+		return "BdbBin " + hex(self.num)
 	
 	def __str__(self):
 		return " "*self.depth + self._str()
@@ -63,15 +102,13 @@ class Branch:
 		self.depth = depth
 		self.num = num
 		
-		i = 0
-		while i < len(first.children):
-			c = first.children[i]
-			bin = (c.num>>2*(31-depth))%4
-			if bin!=0:
-				first.children.pop(i)
-				self.children[bin].children.append(c)
-			else:
-				i += 1
+		i = first.get()
+		while i.has_next():
+			num,val = i.next()
+			bin = (num>>2*(31-depth))%4
+			if bin != 0:
+				i.remove()
+				self.children[bin].put(num,val)
 		
 		# prevent this from spiralling out of control
 		if depth < 31:
@@ -99,12 +136,11 @@ class QuadPartition:
 	def __str__(self):
 		return str(self.root)
 	
-	def add(self, v):
+	def add(self, lat, lon, val):
 		self._total_nodes += 1
-		bnum = self.get_bin_num(v.lat, v.lon)
-		v.num = bnum
+		bnum = self.get_bin_num(lat, lon)
 		parent,i,box = self._get_node(bnum)
-		box.children.append(v)
+		box.put(bnum,val)
 		if box.split():
 			if i == None:
 				self.root = Branch(0,0,self.leaf, box)
@@ -131,7 +167,11 @@ class QuadPartition:
 	
 	def _get_all(self, root):
 		if isinstance(root, self.leaf):
-			return root.children
+			i = root.get()
+			result = []
+			while i.has_next():
+				result.append(i.next()[1])
+			return result
 		else:
 			# this is probably slowwwwww
 			result = []
@@ -229,8 +269,8 @@ class QuadPartition:
 		return (x,y)
 
 if __name__=="__main__":
-	
-	part = QuadPartition(NodeServer)
+	"""
+	part = QuadPartition(BdbBin)
 	
 	print "interlace stuff"
 	for x,y in [(123,456),(0,0),(35,40)]:
@@ -262,8 +302,8 @@ if __name__=="__main__":
 	print "add"
 	print part
 	print
-	for n in [GeoNode(45,-90,"a"),GeoNode(-45,90,"b1"),GeoNode(-45,90,"b2"),GeoNode(-45,90,"b3"),GeoNode(45,90,"c")]:
-		part.add(n)
+	for lat,lon,val in [(45,-90,"a"),(-45,90,"b1"),(-45,90,"b2"),(-45,90,"b3"),(45,90,"c")]:
+		part.add(lat,lon,val)
 		print part
 		print
 	
@@ -271,12 +311,12 @@ if __name__=="__main__":
 	for t,l,r,b in [(45,-90,90,-45),(90,-180,-91,46),(90,-180,-1,1)]:
 		r = part.get_box(l,b,r,t)
 		print r
-		print
+		print"""
 	
 	import sys
 	
 	if len(sys.argv) > 1:
-		data = QuadPartition(NodeServer)
+		data = QuadPartition(BdbBin)
 		from xml.sax import make_parser, handler
 
 		class FancyCounter(handler.ContentHandler):
@@ -286,15 +326,11 @@ if __name__=="__main__":
 
 			def startElement(self, name, attrs):
 				if name == "node":
-					self._object = GeoNode()
-					self._object.v = int(attrs["id"])
-					self._object.lat = float(attrs["lat"])
-					self._object.lon = float(attrs["lon"])
+					data.add(float(attrs["lat"]),float(attrs["lon"]),int(attrs["id"]))
 
 			def endElement(self, name):
 				# Store in Berkeley DB
 				if name == "node":
-					data.add(self._object)
 					self._count += 1
 					if self._count % 100000 == 0:
 						print "Processed %d elements" % self._count
@@ -307,24 +343,22 @@ if __name__=="__main__":
 		# data bounds t47.9226, l-122.5801, b47.888, r-122.5315 
 		parser = make_parser()
 		parser.setContentHandler(FancyCounter())
-		try:
-			parser.parse(sys.argv[1])
-		except:
-			pass
+		parser.parse(sys.argv[1])
 		
 		print "loaded hansville",data._total_nodes,"nodes"
 		#minlat="47.9087" minlon="-122.5617" maxlat="47.9132" maxlon="-122.5569"
 		buck_lake = data.get_box(-122.5617,47.9087,-122.5569,47.9132)
 		print "got",len(buck_lake),"nodes"
-		buck_lake = set(map(lambda n: n.v, buck_lake))
+		buck_lake = set(buck_lake)
 		
 		if len(sys.argv)>2:
 			f = open(sys.argv[2])
 			target = set(map(lambda s: int(s.strip()),f.readlines()))
 			f.close()
-			
+			#print "target("+str(len(target))+")",target
+			#print "out("+str(len(buck_lake))+")",buck_lake
 			print len(target & buck_lake),"nodes shared"
 			print len(buck_lake - target),"extra nodes"
 		else:
 			for s in buck_lake:
-				print s.v
+				print s
