@@ -1,6 +1,6 @@
 include "data.thrift"
 
-service OpenStreetMap {
+service Menzies {
 	data.Node getNode(1: i64 id),
 	data.Node getNodeVersion(1: i64 id, 2: i32 version),
 	i32 editNode(1: data.Node node),
