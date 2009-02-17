@@ -21,6 +21,10 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 		node.setAttribute("id",str(o.id))
 		node.setAttribute("lat",str(o.lat))
 		node.setAttribute("lon",str(o.lon))
+		if o.visible:
+			node.setAttribute("visible","true")
+		else:
+			node.setAttribute("visible","false")
 		for tag in o.tags:
 			t = doc.createElement("tag")
 			t.setAttribute("k",tag)
