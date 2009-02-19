@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import sys
-sys.path.append('gen-py')
-sys.path.append('../common/gen-py')
+sys.path.append('common/gen-py')
+sys.path.append('common/')
 
 from relation import RelationServer
 
