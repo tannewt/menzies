@@ -113,8 +113,8 @@ class RelationRequestHandler:
 		cursor.put(relation_id_str, data, bdb.DB_KEYFIRST)
 
 		# Update indexes
-		for node_id in relation.nodes:
-			self.reverse_node_index.put("%d"%node_id, relation_id_str)
+		#for node_id in relation.nodes:
+		#	self.reverse_node_index.put("%d"%node_id, relation_id_str)
 
 		return relation.id
 

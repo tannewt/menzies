@@ -51,6 +51,41 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 			assert c.tagName == "tag"
 			node.tags[c.getAttribute("k")] = c.getAttribute("v")
 		return node
+
+	def way_to_xml(self, doc, o):
+		way = doc.createElement("way")
+		way.setAttribute("id",str(o.id))
+		way.setAttribute("user",o.user)
+		if o.visible:
+			way.setAttribute("visible","true")
+		else:
+			way.setAttribute("visible","false")
+		for tag in o.tags:
+			t = doc.createElement("tag")
+			t.setAttribute("k",tag)
+			t.setAttribute("v",o.tags[tag])
+			way.appendChild(t)
+		return way
+
+	def relation_to_xml(self, doc, o):
+		relation = doc.createElement("relation")
+		relation.setAttribute("id",str(o.id))
+		relation.setAttribute("user",o.user)
+		if o.visible:
+			relation.setAttribute("visible","true")
+		else:
+			relation.setAttribute("visible","false")
+		for member in o.members:
+			pass
+		for tag in o.tags:
+			t = doc.createElement("tag")
+			t.setAttribute("k",tag)
+			t.setAttribute("v",o.tags[tag])
+			relation.appendChild(t)
+		return relation
+		
+	def tags_to_xml(self, doc, o):
+		
 	
 	def parse_path(self):
 		path = self.path[len(self.API_PREFIX):]
@@ -106,7 +141,17 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 				self.end_headers()
 				self.wfile.write(doc.toxml())
 			elif bits[2]=="history":
-				print 6,"history"
+				id = long(bits[1])
+				print 6,"getNodeHistory(",id,")"
+				n = menzies.getNodeHistory(id)
+				doc = impl.createDocument(None, "osm", None)
+				root = doc.documentElement
+				print n
+				for node in n:
+					root.appendChild(self.node_to_xml(doc,node))
+				self.send_response(200)
+				self.end_headers()
+				self.wfile.write(doc.toxml())
 			elif bits[2]=="ways":
 				print 8,"ways"
 			elif bits[2]=="relations":
