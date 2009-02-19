@@ -1,8 +1,7 @@
 from BaseHTTPServer import *
 import sys
 
-sys.path.append("gen-py/")
-sys.path.append("src/front/")
+sys.path.append("common/gen-py/")
 import data.ttypes as data
 import menzies
 
