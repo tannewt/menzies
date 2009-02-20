@@ -144,22 +144,23 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 			relation.setAttribute("visible","false")
 		for member in o.members:
 			m = doc.createElement("member")
-			for n in member.nodes:
+			if member.node:
 				m.setAttribute("type", "node")
-				m.setAttribute("ref", str(n))
-			for w in member.ways:
+				m.setAttribute("ref", str(member.node))
+			elif member.way:
 				m.setAttribute("type", "way")
-				m.setAttribute("ref", str(w))
-			for r in member.relations:
+				m.setAttribute("ref", str(member.way))
+			elif member.relation:
 				m.setAttribute("type", "relation")
-				m.setAttribute("ref", str(r))
-			m.setAttribute("role", m.role)
+				m.setAttribute("ref", str(member.relation))
+			m.setAttribute("role", member.role)
 			relation.appendChild(m)
-		for tag in o.tags:
-			t = doc.createElement("tag")
-			t.setAttribute("k",tag)
-			t.setAttribute("v",o.tags[tag])
-			relation.appendChild(t)
+		if o.tags:
+			for tag in o.tags:
+				t = doc.createElement("tag")
+				t.setAttribute("k",tag)
+				t.setAttribute("v",o.tags[tag])
+				relation.appendChild(t)
 		return relation	
 	
 	def relation_from_xml(self, s):
@@ -370,6 +371,21 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 				
 			elif bits[2]=="relations":
 				print 17,"relations"
+				id = long(bits[1])
+				relations = menzies.getRelationsFromWay(id)
+				if relations:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print relations
+					for relation in relations:
+						root.appendChild(self.relation_to_xml(doc, relation))
+					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:
+					self.send_response(410)
+					self.end_headers()	
 			else:
 				id = long(bits[1])
 				version = int(bits[2])
@@ -391,7 +407,43 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					self.send_response(410)
 					self.end_headers()	
 		elif bits[0]=="relation":
-			print "relation"
+			print bits
+			if len(bits)==2:
+				id = long(bits[1])
+				print 2,"getRelation(",id,")"
+				relation = menzies.getRelation(id)
+				if relation:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print relation
+					root.appendChild(self.relation_to_xml(doc, relation))
+
+					xml_str = doc.toxml()
+					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
+					self.end_headers()
+					self.wfile.write(xml_str)
+				else:
+					self.send_response(410)
+					self.end_headers()
+			elif bits[2]=="relations":
+				id = long(bits[1])
+				print "relations"
+				relations = menzies.getRelationsFromRelation(id)
+				if relations:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print relations
+					for relation in relations:
+						root.appendChild(self.relation_to_xml(doc, relation))
+					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:
+					self.send_response(410)
+					self.end_headers()	
 		elif bits[0]=="changeset":
 			print "changeset"
 		elif bits[0]=="map":

@@ -108,6 +108,40 @@ class RelationRequestHandler:
 				relations.append(relation)
 		return relations
 
+	def getRelationsFromWay(self, way_id):
+		cursor = self.reverse_way_index.cursor()
+		relation_ids = set()
+		relation_id_str_pair = cursor.get("%d"%way_id, bdb.DB_SET)
+		while relation_id_str_pair:
+			relation_ids.add(relation_id_str_pair[1])
+			relation_id_str_pair = cursor.get("%d"%way_id, bdb.DB_NEXT_DUP)
+
+		relations = []
+		for relation_id_str in relation_ids:
+			data = self.db.get(relation_id_str)
+			if data:
+				relation = Relation()
+				thrift_wrapper.from_string(relation, data)
+				relations.append(relation)
+		return relations
+
+	def getRelationsFromRelation(self, relation_id):
+		cursor = self.reverse_relation_index.cursor()
+		relation_ids = set()
+		relation_id_str_pair = cursor.get("%d"%relation_id, bdb.DB_SET)
+		while relation_id_str_pair:
+			relation_ids.add(relation_id_str_pair[1])
+			relation_id_str_pair = cursor.get("%d"%relation_id, bdb.DB_NEXT_DUP)
+
+		relations = []
+		for relation_id_str in relation_ids:
+			data = self.db.get(relation_id_str)
+			if data:
+				relation = Relation()
+				thrift_wrapper.from_string(relation, data)
+				relations.append(relation)
+		return relations
+
 	def createRelation(self, relation):
 		relation.version = 1
 

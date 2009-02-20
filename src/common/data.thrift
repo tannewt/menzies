@@ -78,6 +78,7 @@ struct Relation {
 	6: i32 version,
 	7: i64 timestamp,
 	8: set<Member> members
+	9: map<string,string> tags,
 }
 
 struct BBox {

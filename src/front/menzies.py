@@ -28,6 +28,13 @@ class Menzies:
 		transport.open()
 		self.servers["way"] = client
 
+		transport = TSocket.TSocket('localhost', 9092)
+		transport = TTransport.TBufferedTransport(transport)
+		protocol = TBinaryProtocol.TBinaryProtocol(transport)
+		client = RelationServer.Client(protocol)
+		transport.open()
+		self.servers["relation"] = client
+
 		self.next_node_id = 0
 	
 	def getNode(self,id):
@@ -149,5 +156,26 @@ class Menzies:
 			pass
 		return None
 	def getRelationsFromNode(self, id):
-		pass
+		try:
+			relations = self.servers["relation"].getRelationsFromNode(id)
+			return relations
+		except TApplicationException:
+			pass
+		return None
+
+	def getRelationsFromWay(self, id):
+		try:
+			relations = self.servers["relation"].getRelationsFromWay(id)
+			return relations
+		except TApplicationException:
+			pass
+		return None
+
+	def getRelation(self, id):
+		try:
+			relation = self.servers["relation"].getRelation(id)
+			return relation
+		except TApplicationException:
+			pass
+		return None
 
