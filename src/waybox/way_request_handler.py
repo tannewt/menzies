@@ -117,13 +117,13 @@ class WayRequestHandler:
 
 		data = thrift_wrapper.to_string(way)
 		cursor = self.db.cursor()
-		self.cursor.put(way_id_str, data, bdb.DB_KEYFIRST)
-
+		cursor.put(way_id_str, data, bdb.DB_KEYFIRST)
+		cursor.close()
+	
 		# Update indexes
 		for node_id in way.nodes:
 			self.reverse_node_index.put("%d"%node_id, way_id_str)
 
-		cursor.close()
 		return way.id
 
 	def createWays(self, ways):

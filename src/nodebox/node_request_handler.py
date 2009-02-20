@@ -56,6 +56,8 @@ class NodeRequestHandler:
 		return None
 
 	def createNode(self, node):
+		node.version = 1
+
 		data = thrift_wrapper.to_string(node)
 		# Note to self: The bulk import process was 100's times faster not creating a new cursor
 		# Maybe unnecessary locking issues?

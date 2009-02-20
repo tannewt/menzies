@@ -218,9 +218,13 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					root = doc.documentElement
 					print n
 					root.appendChild(self.node_to_xml(doc,n))
+
+					xml_str = doc.toxml()
 					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(xml_str)
 				else:					
 					self.send_response(410)
 					self.end_headers()
@@ -234,9 +238,13 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					print n
 					for node in n:
 						root.appendChild(self.node_to_xml(doc,node))
+
+					xml_str = doc.toxml()
 					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(xml_str)
 				else:
 					self.send_response(410)
 					self.end_headers()					
@@ -251,6 +259,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					for way in ways:
 						root.appendChild(self.way_to_xml(doc, way))
 					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
 					self.end_headers()
 					self.wfile.write(doc.toxml())
 				else:
@@ -266,9 +275,13 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					print relations
 					for relation in relations:
 						root.appendChild(self.relation_to_xml(doc, relation))
+
+					xml_str = doc.toxml()
 					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(xml_str)
 				else:
 					self.send_response(410)
 					self.end_headers()
@@ -282,9 +295,13 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					root = doc.documentElement
 					print n
 					root.appendChild(self.node_to_xml(doc, n))
+
+					xml_str = doc.toxml()
 					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(xml_str)
 				else:
 					self.send_response(410)
 					self.end_headers()
@@ -298,9 +315,13 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					root = doc.documentElement
 					print w
 					root.appendChild(self.way_to_xml(doc,w))
+
+					xml_str = doc.toxml()
 					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(xml_str)
 				else:
 					self.send_response(410)
 					self.end_headers()
@@ -314,9 +335,13 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					print ways
 					for way in ways:
 						root.appendChild(self.way_to_xml(doc, way))
+
+					xml_str = doc.toxml()
 					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(xml_str)
 				else:
 					self.send_response(410)
 					self.end_headers()	
@@ -330,9 +355,13 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					print osm
 					for way in way:
 						root.appendChild(self.way_to_xml(doc, way))
+
+					xml_str = doc.toxml()
 					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(xml_str)
 				else:
 					self.send_response(410)
 					self.end_headers()	
@@ -350,9 +379,13 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					print ways
 					for way in ways:
 						root.appendChild(self.way_to_xml(doc, way))
+
+					xml_str = doc.toxml()
 					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(xml_str)
 				else:
 					self.send_response(410)
 					self.end_headers()	
@@ -370,4 +403,6 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 
 if __name__=="__main__":
 	httpd = HTTPServer(("",8001),OpenStreetMapHandler)
+	httpd.protocol_version = "HTTP/1.1"
 	httpd.serve_forever()
+
