@@ -127,8 +127,20 @@ class Menzies:
 	
 	def getWayHistory(self, id):
 		try:
-			w = self.servers["way"].getNodeHistory(id)
+			w = self.servers["way"].getWayHistory(id)
 			return w
+		except:
+			pass
+		return None
+
+	def getWayFull(self, id):
+		try:
+			osm = Osm()
+			osm.ways = [self.servers["way"].getWay(id)]
+			osm.nodes = []
+			for node_id in way.nodes:
+				osm.nodes.append(self.servers["node"][0].getNode(node_id))
+			return osm
 		except:
 			pass
 		return None

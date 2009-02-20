@@ -321,7 +321,22 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					self.send_response(410)
 					self.end_headers()	
 			elif bits[2]=="full":
+				id = long(bits[1])
 				print 18,"full"
+				osm = menzies.getWayFull(id)
+				if osm:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print osm
+					for way in way:
+						root.appendChild(self.way_to_xml(doc, way))
+					self.send_response(200)
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:
+					self.send_response(410)
+					self.end_headers()	
+				
 			elif bits[2]=="relations":
 				print 17,"relations"
 			else:
