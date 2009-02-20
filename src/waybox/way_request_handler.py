@@ -47,6 +47,8 @@ class WayRequestHandler:
 			data_pair = cursor.get(None, bdb.DB_NEXT)
 
 	def getWay(self, id):
+		print "getWay(%d)" % id
+
 		way = Way()
 		data = self.db.get("%d"%id)
 		if data:

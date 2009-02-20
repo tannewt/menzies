@@ -403,6 +403,5 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 
 if __name__=="__main__":
 	httpd = HTTPServer(("",8001),OpenStreetMapHandler)
-	httpd.protocol_version = "HTTP/1.1"
 	httpd.serve_forever()
 

@@ -19,13 +19,17 @@ class RelationRequestHandler:
 
 		self.reverse_node_index = bdb.DB()
 		self.reverse_node_index.set_flags(bdb.DB_DUP)
-		self.reverse_node_index.open("relations.db","Reverse Node Index", bdb.DB_BTREE, bdb.DB_CREATE)
+		self.reverse_node_index.open("relations_reverse_node_index.db","Reverse Node Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
 		self.reverse_relation_index = bdb.DB()
 		self.reverse_relation_index.set_flags(bdb.DB_DUP)
-		self.reverse_relation_index.open("relations.db","Reverse Relation Index", bdb.DB_BTREE, bdb.DB_CREATE)
+		self.reverse_relation_index.open("relations_reverse_relation_index.db","Reverse Relation Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
-		self.debug_print_db()
+		self.reverse_way_index = bdb.DB()
+		self.reverse_way_index.set_flags(bdb.DB_DUP)
+		self.reverse_way_index.open("relations_reverse_way_index.db","Reverse Relation Index", bdb.DB_BTREE, bdb.DB_CREATE)
+
+		#self.debug_print_db()
 
 	def debug_print_db(self):
 		relation = Relation()
@@ -38,6 +42,7 @@ class RelationRequestHandler:
 			thrift_wrapper.from_string(relation, data_pair[1])
 			print "%s -> %s" % (data_pair[0],relation)
 			data_pair = cursor.get(None, bdb.DB_NEXT)
+		cursor.close()
 
 	def getRelation(self, id):
 		relation = Relation()
