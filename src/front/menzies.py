@@ -16,6 +16,14 @@ class Menzies:
 			client = NodeServer.Client(protocol)
 			transport.open()
 			self.servers["node"].append(client)
+
+		transport = TSocket.TSocket('localhost', 9090)
+		transport = TTransport.TBufferedTransport(transport)
+		protocol = TBinaryProtocol.TBinaryProtocol(transport)
+		client = NodeServer.Client(protocol)
+		transport.open()
+		self.servers["way"] = client
+
 		self.next_node_id = 0
 	
 	def getNode(self,id):
@@ -68,5 +76,13 @@ class Menzies:
 				return n
 			except:
 				pass
+		return None
+
+	def getWaysFromNode(self, id):
+		try:
+			ways = self.servers["way"].getWaysFromNode(id)
+			return ways
+		except:
+			pass
 		return None
 

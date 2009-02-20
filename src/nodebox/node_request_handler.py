@@ -63,8 +63,8 @@ class NodeRequestHandler:
 		# Maybe unnecessary locking issues?
 		#cursor = self.db.cursor()
 		self.cursor.put("%d"%node.id, data, bdb.DB_KEYFIRST)
-		if Rtree:
-			self.spatial_index.add(node.id, (node.lat, node.lon))
+		#if Rtree:
+		#	self.spatial_index.add(node.id, (node.lat, node.lon))
 		#cursor.close()
 		return node.id
 

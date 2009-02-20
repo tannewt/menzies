@@ -122,10 +122,8 @@ class FancyCounter(handler.ContentHandler):
 		    print "%20s %d" % pair
 
             
-try:
-	parser = make_parser()
-	parser.setContentHandler(FancyCounter())
-	parser.parse(sys.argv[1])
-except:
-	print "done early"
+
+parser = make_parser()
+parser.setContentHandler(FancyCounter())
+parser.parse(sys.argv[1])
 
