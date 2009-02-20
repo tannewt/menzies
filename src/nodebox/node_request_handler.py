@@ -70,8 +70,6 @@ class NodeRequestHandler:
 		cursor = self.db.cursor()
 		for node in nodes:
 			data = thrift_wrapper.to_string(node)
-			# Note to self: The bulk import process was 100's times faster not creating a new cursor
-			# Maybe unnecessary locking issues?
 			cursor.put("%d"%node.id, data, bdb.DB_KEYFIRST)
 			#if Rtree:
 			#	self.spatial_index.add(node.id, (node.lat, node.lon))

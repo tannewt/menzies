@@ -33,9 +33,6 @@ class FancyCounter(handler.ContentHandler):
 
 		self._object = None
 
-		self._nodes = []
-		self._ways = []
-
 	def startElement(self, name, attrs):
 		self._elems += 1
 		self._attrs += len(attrs)
@@ -103,24 +100,15 @@ class FancyCounter(handler.ContentHandler):
 	def endElement(self, name):
 		# Store in Berkeley DB
 		if name == "node":
-			self._nodes.append(self._object)
+			node_handler.createNode(self._object)
 		elif name == "way":
-			self._ways.append(self._object)
+			way_handler.createWay(self._object)
 		elif name == "relation":
 			relation_handler.createRelation(self._object)
 
 		if self._elems % 20000 == 0:
 			print "Processed %d elements" % self._elems
 
-			print "Adding nodes to db"
-			node_handler.createNodes(self._nodes)
-			self._nodes = []
-			print "...done"
-
-			print "Adding ways to db"
-			way_handler.createWays(self._ways)
-			self._ways = []
-			print "...done"  
 
 	def endDocument(self):
 		print "There were", self._elems, "elements."
