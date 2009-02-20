@@ -1,0 +1,8 @@
+<osm><relation id="-1" timestamp="2009-02-09T13:55:27Z" user="JasonKivlighn">
+	<member type="relation" ref="0" role=""/>
+	<member type="node" ref="0" role=""/>
+	<tag k="created_by" v="Potlatch 0.10f"/>
+	<tag k="highway" v="service"/>
+</relation>
+</osm>
+
