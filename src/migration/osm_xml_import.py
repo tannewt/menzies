@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys
+import sys, time
 
 from xml.sax import make_parser, handler
 
@@ -19,6 +19,9 @@ way_handler = WayRequestHandler()
 sys.path.append('../relationbox')
 from relation_request_handler import RelationRequestHandler
 relation_handler = RelationRequestHandler()
+
+#import rtree
+#index = rtree.Rtree("spatial", pagesize=8)
 
 class FancyCounter(handler.ContentHandler):
 
@@ -44,12 +47,15 @@ class FancyCounter(handler.ContentHandler):
 			self._object.id = int(attrs["id"])
 			self._object.lat = float(attrs["lat"])
 			self._object.lon = float(attrs["lon"])
+
+			#index.add(self._object.id, (self._object.lat, self._object.lon))
+
 			if attrs.has_key("changeset"): self._object.changeset = int(attrs["changeset"])
 			if attrs.has_key("visible"): self._object.visible = attrs["visible"] == "true"
 			if attrs.has_key("user"): self._object.user = attrs["user"].encode("utf-8")
 			if attrs.has_key("uid"): self._object.uid = int(attrs["uid"])
 			if attrs.has_key("version"): self._object.version = int(attrs["version"])
-			#if attrs.has_key("timestamp"): self._object.timestamp = attrs["timestamp"]
+			if attrs.has_key("timestamp"): self._object.timestamp = time.mktime(time.strptime(attrs["timestamp"], "%Y-%m-%dT%H:%M:%SZ"))
 		elif name == "way":
 			self._object = Way()
 			self._object.tags = {}
@@ -60,7 +66,7 @@ class FancyCounter(handler.ContentHandler):
 			if attrs.has_key("user"): self._object.user = attrs["user"].encode("utf-8")
 			if attrs.has_key("uid"): self._object.uid = int(attrs["uid"])
 			if attrs.has_key("version"): self._object.version = int(attrs["version"])
-			#if attrs.has_key("timestamp"): self._object.timestamp = attrs["timestamp"]
+			if attrs.has_key("timestamp"): self._object.timestamp = time.mktime(time.strptime(attrs["timestamp"], "%Y-%m-%dT%H:%M:%SZ"))
 		elif name == "relation":
 			self._object = Relation()
 			self._object.tags = {}
@@ -71,7 +77,7 @@ class FancyCounter(handler.ContentHandler):
 			if attrs.has_key("user"): self._object.user = attrs["user"].encode("utf-8")
 			if attrs.has_key("uid"): self._object.uid = int(attrs["uid"])
 			if attrs.has_key("version"): self._object.version = int(attrs["version"])
-			#if attrs.has_key("timestamp"): self._object.timestamp = attrs["timestamp"]
+			if attrs.has_key("timestamp"): self._object.timestamp = time.mktime(time.strptime(attrs["timestamp"], "%Y-%m-%dT%H:%M:%SZ"))
 		elif name == "tag":
 			self._object.tags[attrs["k"].encode("utf-8")] = attrs["v"].encode("utf-8")
 		elif name == "nd":
@@ -116,8 +122,10 @@ class FancyCounter(handler.ContentHandler):
 		    print "%20s %d" % pair
 
             
-parser = make_parser()
-parser.setContentHandler(FancyCounter())
-parser.parse(sys.argv[1])
-
+try:
+	parser = make_parser()
+	parser.setContentHandler(FancyCounter())
+	parser.parse(sys.argv[1])
+except:
+	print "done early"
 
