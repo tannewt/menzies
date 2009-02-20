@@ -29,23 +29,29 @@ class Menzies:
 	
 	def getNodeVersion(self, id, version):
 		for s in self.servers["node"]:
-			n = s.getNodeVersion(id, version)
-			if n:
+			try:
+				n = s.getNodeVersion(id, version)
 				return n
+			except:
+				pass
 		return None
 	
 	def editNode(self, node):
 		for s in self.servers["node"]:
-			n = s.editNode(node)
-			if n:
+			try:
+				n = s.editNode(node)
 				return n
+			except:
+				pass
 		return None
 	
 	def deleteNode(self, node):
 		for s in self.servers["node"]:
-			n = s.deleteNode(node)
-			if n:
+			try:
+				n = s.deleteNode(node)
 				return n
+			except:
+				pass
 		return None
 	
 	def createNode(self, node):
@@ -57,7 +63,10 @@ class Menzies:
 	
 	def getNodeHistory(self, id):
 		for s in self.servers["node"]:
-			n = s.getNodeHistory(id)
-			if n:
+			try:
+				n = s.getNodeHistory(id)
 				return n
+			except:
+				pass
 		return None
+

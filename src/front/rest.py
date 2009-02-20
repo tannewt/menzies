@@ -213,72 +213,96 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 				id = long(bits[1])
 				print 2,"getNode(",id,")"
 				n = menzies.getNode(id)
-				doc = impl.createDocument(None, "osm", None)
-				root = doc.documentElement
-				print n
-				root.appendChild(self.node_to_xml(doc,n))
-				self.send_response(200)
-				self.end_headers()
-				self.wfile.write(doc.toxml())
+				if n:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print n
+					root.appendChild(self.node_to_xml(doc,n))
+					self.send_response(200)
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:					
+					self.send_response(410)
+					self.end_headers()
 			elif bits[2]=="history":
 				id = long(bits[1])
 				print 6,"getNodeHistory(",id,")"
 				n = menzies.getNodeHistory(id)
-				doc = impl.createDocument(None, "osm", None)
-				root = doc.documentElement
-				print n
-				for node in n:
-					root.appendChild(self.node_to_xml(doc,node))
-				self.send_response(200)
-				self.end_headers()
-				self.wfile.write(doc.toxml())
+				if n:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print n
+					for node in n:
+						root.appendChild(self.node_to_xml(doc,node))
+					self.send_response(200)
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:
+					self.send_response(410)
+					self.end_headers()					
 			elif bits[2]=="ways":
 				id = long(bits[1])
 				print 8, "ways"
 				ways = menzies.getWaysFromNode(id)
-				doc = impl.createDocument(None, "osm", None)
-				root = doc.documentElement
-				print ways
-				for way in ways:
-					root.appendChild(self.way_to_xml(doc, way))
-				self.send_response(200)
-				self.end_headers()
-				self.wfile.write(doc.toxml())
+				if ways:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print ways
+					for way in ways:
+						root.appendChild(self.way_to_xml(doc, way))
+					self.send_response(200)
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:
+					self.send_response(410)
+					self.end_headers()					
 			elif bits[2]=="relations":
 				id = long(bits[1])
 				print 9,"relations"
 				relations = menzies.getRelationsFromNode(id)
-				doc = impl.createDocument(None, "osm", None)
-				root = doc.documentElement
-				print relations
-				for relation in relations:
-					root.appendChild(self.relation_to_xml(doc, relation))
-				self.send_response(200)
-				self.end_headers()
-				self.wfile.write(doc.toxml())
+				if relations:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print relations
+					for relation in relations:
+						root.appendChild(self.relation_to_xml(doc, relation))
+					self.send_response(200)
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:
+					self.send_response(410)
+					self.end_headers()
 			else:
 				id = long(bits[1])
 				version = int(bits[2])
 				print 7,"version",bits[2]
 				n = menzies.getNodeVersion(id, version)
-				doc = impl.createDocument(None, "osm", None)
-				root = doc.documentElement
-				print n
-				root.appendChild(self.node_to_xml(doc, n))
-				self.send_response(200)
-				self.end_headers()
-				self.wfile.write(doc.toxml())
+				if n:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print n
+					root.appendChild(self.node_to_xml(doc, n))
+					self.send_response(200)
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:
+					self.send_response(410)
+					self.end_headers()
 		elif bits[0]=="way":
 			if len(bits)==2:
 				print 11,"getWay(",long(bits[1]),")"
 				w = menzies.getWay(id)
-				doc = impl.createDocument(None, "osm", None)
-				root = doc.documentElement
-				print w
-				root.appendChild(self.way_to_xml(doc,w))
-				self.send_response(200)
-				self.end_headers()
-				self.wfile.write(doc.toxml())
+				if w:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print w
+					root.appendChild(self.way_to_xml(doc,w))
+					self.send_response(200)
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:
+					self.send_response(410)
+					self.end_headers()
 			elif bits[2]=="history":
 				print 15,"history"
 			elif bits[2]=="full":
