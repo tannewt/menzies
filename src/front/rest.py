@@ -69,7 +69,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 			if c.tagName == "tag":
 				relation.tags[c.getAttribute("k")] = c.getAttribute("v")
 			elif c.tagName == "member":
-				relations.members.append(parse_member_xml(c))
+				relation.members.append(self.parse_member_xml(c))
 		return relation
 
 	def parse_member_xml(self, e):
@@ -201,7 +201,16 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 			node = self.node_from_xml(xml_in)
 			print "createNode(",node,")"
 			id = menzies.createNode(node)
-			print "id",id
+		elif bits[0] == "way" and bits[1]=="create":
+			way = self.way_from_xml(xml_in)
+			print "createWay(",way,")"
+			id = menzies.createWay(way)
+		elif bits[0] == "relation" and bits[1]=="create":
+			relation = self.relation_from_xml(xml_in)
+			print "createRelation(",relation,")"
+			id = menzies.createRelation(relation)
+
+		print "id",id
 
 		self.send_response(200)
 		self.send_header("Content-type", "text/html")

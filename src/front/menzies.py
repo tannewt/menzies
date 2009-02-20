@@ -130,12 +130,8 @@ class Menzies:
 		return None
 	
 	def createWay(self, way):
-		way.id = self.next_way_id
-		self.next_way_id+=1
-		
-		self.servers["way"].createNode(way)
-		return way.id
-	
+		return self.servers["way"].createWay(way)
+
 	def getWayHistory(self, id):
 		try:
 			w = self.servers["way"].getWayHistory(id)
@@ -178,4 +174,7 @@ class Menzies:
 		except TApplicationException:
 			pass
 		return None
+
+	def createRelation(self, relation):
+		return self.servers["relation"].createRelation(relation)
 
