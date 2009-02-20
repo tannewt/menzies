@@ -107,7 +107,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 	def node_from_xml(self, s):
 		dom = parseString(s)
 		assert dom.documentElement.tagName == "osm"
-		return parse_node_xml(dom.documentElement.firstChild)
+		return self.parse_node_xml(dom.documentElement.firstChild)
 
 	def way_to_xml(self, doc, o):
 		way = doc.createElement("way")
@@ -131,7 +131,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 	def way_from_xml(self, s):
 		dom = parseString(s)
 		assert dom.documentElement.tagName == "osm"
-		return parse_way_xml(dom.documentElement.firstChild)
+		return self.parse_way_xml(dom.documentElement.firstChild)
 
 
 	def relation_to_xml(self, doc, o):
@@ -166,7 +166,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 	def relation_from_xml(self, s):
 		dom = parseString(s)
 		assert dom.documentElement.tagName == "osm"
-		return parse_relation_xml(dom.documentElement.firstChild)
+		return self.parse_relation_xml(dom.documentElement.firstChild)
 
 	def parse_path(self):
 		path = self.path[len(self.API_PREFIX):]
@@ -202,10 +202,12 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 			print "createNode(",node,")"
 			id = menzies.createNode(node)
 			print "id",id
+
 		self.send_response(200)
+		self.send_header("Content-type", "text/html")
+		self.send_header("Content-length", len(str(id)))
 		self.end_headers()
 		self.wfile.write(str(id))
-	
 	def do_GET(self):
 		bits,args = self.parse_path()
 		if bits[0]=="node":
