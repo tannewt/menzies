@@ -258,8 +258,8 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 				self.wfile.write(doc.toxml())
 			else:
 				id = long(bits[1])
-				version = int(bits[3])
-				print 7,"version",bits[3]
+				version = int(bits[2])
+				print 7,"version",bits[2]
 				n = menzies.getNodeVersion(id, version)
 				doc = impl.createDocument(None, "osm", None)
 				root = doc.documentElement

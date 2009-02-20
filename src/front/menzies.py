@@ -20,9 +20,11 @@ class Menzies:
 	
 	def getNode(self,id):
 		for s in self.servers["node"]:
-			n = s.getNode(id)
-			if n:
+			try:
+				n = s.getNode(id)
 				return n
+			except:
+				pass
 		return None
 	
 	def getNodeVersion(self, id, version):
