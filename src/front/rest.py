@@ -290,7 +290,8 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					self.end_headers()
 		elif bits[0]=="way":
 			if len(bits)==2:
-				print 11,"getWay(",long(bits[1]),")"
+				id = long(bits[1])
+				print 11,"getWay(",id,")"
 				w = menzies.getWay(id)
 				if w:
 					doc = impl.createDocument(None, "osm", None)
@@ -304,13 +305,42 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					self.send_response(410)
 					self.end_headers()
 			elif bits[2]=="history":
+				id = long(bits[1])
 				print 15,"history"
+				ways = menzies.getWayHistory(id)
+				if ways:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print ways
+					for way in ways:
+						root.appendChild(self.way_to_xml(doc, way))
+					self.send_response(200)
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:
+					self.send_response(410)
+					self.end_headers()	
 			elif bits[2]=="full":
 				print 18,"full"
 			elif bits[2]=="relations":
 				print 17,"relations"
 			else:
-				print 16,"version",bits[3]
+				id = long(bits[1])
+				version = int(bits[2])
+				print 16,"version", version
+				ways = menzies.getWayVersion(id, version)
+				if ways:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print ways
+					for way in ways:
+						root.appendChild(self.way_to_xml(doc, way))
+					self.send_response(200)
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:
+					self.send_response(410)
+					self.end_headers()	
 		elif bits[0]=="relation":
 			print "relation"
 		elif bits[0]=="changeset":
