@@ -134,7 +134,7 @@ class WayRequestHandler:
 			way_id_str = "%d"%way.id
 
 			data = thrift_wrapper.to_string(way)
-			self.cursor.put(way_id_str, data, bdb.DB_KEYFIRST)
+			cursor.put(way_id_str, data, bdb.DB_KEYFIRST)
 
 			# Update indexes
 			for node_id in way.nodes:

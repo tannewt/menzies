@@ -86,3 +86,50 @@ class Menzies:
 			pass
 		return None
 
+	def getWay(self, id):
+		try:
+			way = self.servers["way"].getWay(id)
+			return way
+		except:
+			pass
+		return None
+
+	def getWayVersion(self, id, version):
+		try:
+			w = self.servers["way"].getWayVersion(id, version)
+			return w
+		except:
+			pass
+		return None
+	
+	def editWay(self, way):
+		try:
+			w = self.servers["way"].editNode(way)
+			return w
+		except:
+			pass
+		return None
+	
+	def deleteWay(self, way):
+		try:
+			w = self.servers["way"].deleteWay(way)
+			return w
+		except:
+			pass
+		return None
+	
+	def createWay(self, way):
+		way.id = self.next_way_id
+		self.next_way_id+=1
+		
+		self.servers["way"].createNode(way)
+		return way.id
+	
+	def getWayHistory(self, id):
+		try:
+			w = self.servers["way"].getNodeHistory(id)
+			return w
+		except:
+			pass
+		return None
+
