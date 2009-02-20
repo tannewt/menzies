@@ -86,7 +86,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 			member.relation = long(e.getAttribute("ref"))		
 
 		return member
-	
+
 	def node_to_xml(self, doc, o):
 		node = doc.createElement("node")
 		#node.tagName = "node"
@@ -117,9 +117,9 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 			way.setAttribute("visible","true")
 		else:
 			way.setAttribute("visible","false")
-		for n in o.nodes:
+		for node_id in o.nodes:
 			nd = doc.createElement("nd")
-			nd.setAttribute("ref",str(n.id))
+			nd.setAttribute("ref",str(node_id))
 			way.appendChild(nd)
 		for tag in o.tags:
 			t = doc.createElement("tag")
@@ -146,13 +146,13 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 			m = doc.createElement("member")
 			for n in member.nodes:
 				m.setAttribute("type", "node")
-				m.setAttribute("ref", str(n.id))
+				m.setAttribute("ref", str(n))
 			for w in member.ways:
 				m.setAttribute("type", "way")
-				m.setAttribute("ref", str(w.id))
+				m.setAttribute("ref", str(w))
 			for r in member.relations:
 				m.setAttribute("type", "relation")
-				m.setAttribute("ref", str(r.id))
+				m.setAttribute("ref", str(r))
 			m.setAttribute("role", m.role)
 			relation.appendChild(m)
 		for tag in o.tags:
@@ -353,8 +353,10 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					doc = impl.createDocument(None, "osm", None)
 					root = doc.documentElement
 					print osm
-					for way in way:
+					for way in osm.ways:
 						root.appendChild(self.way_to_xml(doc, way))
+					for node in osm.nodes:
+						root.appendChild(self.node_to_xml(doc, node))
 
 					xml_str = doc.toxml()
 					self.send_response(200)
@@ -372,13 +374,12 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 				id = long(bits[1])
 				version = int(bits[2])
 				print 16,"version", version
-				ways = menzies.getWayVersion(id, version)
-				if ways:
+				way = menzies.getWayVersion(id, version)
+				if way:
 					doc = impl.createDocument(None, "osm", None)
 					root = doc.documentElement
-					print ways
-					for way in ways:
-						root.appendChild(self.way_to_xml(doc, way))
+					print way
+					root.appendChild(self.way_to_xml(doc, way))
 
 					xml_str = doc.toxml()
 					self.send_response(200)

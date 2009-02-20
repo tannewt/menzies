@@ -2,6 +2,8 @@ from node import NodeServer
 from way import WayServer
 from relation import RelationServer
 
+from data.ttypes import *
+
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
@@ -140,10 +142,12 @@ class Menzies:
 			osm = Osm()
 			osm.ways = [self.servers["way"].getWay(id)]
 			osm.nodes = []
-			for node_id in way.nodes:
+			for node_id in osm.ways[0].nodes:
 				osm.nodes.append(self.servers["node"][0].getNode(node_id))
 			return osm
-		except:
+		except TApplicationException:
 			pass
 		return None
+	def getRelationsFromNode(self, id):
+		pass
 
