@@ -24,8 +24,6 @@ class WayRequestHandler:
 		#self.debug_print_db()
 		#self.debug_print_reverse_node_index()
 
-		self.cursor = self.db.cursor()
-
 	def debug_print_db(self):
 		way = Way()
 
@@ -118,15 +116,31 @@ class WayRequestHandler:
 		way_id_str = "%d"%way.id
 
 		data = thrift_wrapper.to_string(way)
-		#cursor = self.db.cursor()
+		cursor = self.db.cursor()
 		self.cursor.put(way_id_str, data, bdb.DB_KEYFIRST)
 
 		# Update indexes
 		for node_id in way.nodes:
 			self.reverse_node_index.put("%d"%node_id, way_id_str)
 
-		#cursor.close()
+		cursor.close()
 		return way.id
+
+	def createWays(self, ways):
+		cursor = self.db.cursor()
+		for way in ways:
+			way.version = 1
+
+			way_id_str = "%d"%way.id
+
+			data = thrift_wrapper.to_string(way)
+			self.cursor.put(way_id_str, data, bdb.DB_KEYFIRST)
+
+			# Update indexes
+			for node_id in way.nodes:
+				self.reverse_node_index.put("%d"%node_id, way_id_str)
+
+		cursor.close()
 
 	def deleteWay(self, way):
 		way_id_str = "%d"%way.id
