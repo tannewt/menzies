@@ -1,4 +1,6 @@
 from node import NodeServer
+from way import WayServer
+from relation import RelationServer
 
 from thrift.transport import TSocket
 from thrift.transport import TTransport
@@ -20,7 +22,7 @@ class Menzies:
 		transport = TSocket.TSocket('localhost', 9090)
 		transport = TTransport.TBufferedTransport(transport)
 		protocol = TBinaryProtocol.TBinaryProtocol(transport)
-		client = NodeServer.Client(protocol)
+		client = WayServer.Client(protocol)
 		transport.open()
 		self.servers["way"] = client
 
