@@ -149,8 +149,8 @@ class WayRequestHandler:
 
 		cursor.close()
 
-	def deleteWay(self, way):
-		way_id_str = "%d"%way.id
+	def deleteWay(self, id):
+		way_id_str = "%d"%id
 
 		# Get the last version
 		cursor = self.db.cursor()
@@ -162,21 +162,19 @@ class WayRequestHandler:
 			# Indexes to remove
 			reverse_node_cursor = self.reverse_node_index.cursor()
 			for node_id in set(old_way.nodes):
-				print "Going to remove node %d from the index" % node_id
 				way_id_search_str_pair = reverse_node_cursor.get("%d"%node_id, bdb.DB_SET)
 				while way_id_search_str_pair:
 					if way_id_str == way_id_search_str_pair[1]:
-						print "...calling delete for %s -> %s" % way_id_search_str_pair
 						reverse_node_cursor.delete()
 						break
 					way_id_search_str_pair = reverse_node_cursor.get("%d"%node_id, bdb.DB_NEXT_DUP)
 
-			way.visible = False
-			way.version = old_way.version + 1 # This is bound to have concurrency issues
-			data = thrift_wrapper.to_string(way)
+			old_way.visible = False
+			old_way.version += 1
+			data = thrift_wrapper.to_string(old_way)
 			cursor.put(way_id_str, data, bdb.DB_KEYFIRST)
 
-			return way.id
+			return old_way.version
 		else:
 			# There was no previous version!
 			pass

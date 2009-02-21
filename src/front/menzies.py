@@ -42,7 +42,7 @@ class Menzies:
 			try:
 				n = s.getNode(id)
 				return n
-			except:
+			except TApplicationException:
 				pass
 		return None
 	
@@ -51,7 +51,7 @@ class Menzies:
 			try:
 				n = s.getNodeVersion(id, version)
 				return n
-			except:
+			except TApplicationException:
 				pass
 		return None
 	
@@ -60,7 +60,7 @@ class Menzies:
 			try:
 				n = s.editNode(node)
 				return n
-			except:
+			except TApplicationException:
 				pass
 		return None
 	
@@ -85,7 +85,7 @@ class Menzies:
 			try:
 				n = s.getNodeHistory(id)
 				return n
-			except:
+			except TApplicationException:
 				pass
 		return None
 
@@ -93,7 +93,7 @@ class Menzies:
 		try:
 			ways = self.servers["way"].getWaysFromNode(id)
 			return ways
-		except:
+		except TApplicationException:
 			pass
 		return None
 
@@ -101,7 +101,7 @@ class Menzies:
 		try:
 			way = self.servers["way"].getWay(id)
 			return way
-		except:
+		except TApplicationException:
 			pass
 		return None
 
@@ -109,15 +109,15 @@ class Menzies:
 		try:
 			w = self.servers["way"].getWayVersion(id, version)
 			return w
-		except:
+		except TApplicationException:
 			pass
 		return None
 	
 	def editWay(self, way):
 		try:
-			w = self.servers["way"].editNode(way)
+			w = self.servers["way"].editWay(way)
 			return w
-		except:
+		except TApplicationException:
 			pass
 		return None
 	
@@ -125,7 +125,7 @@ class Menzies:
 		try:
 			w = self.servers["way"].deleteWay(way)
 			return w
-		except:
+		except TApplicationException:
 			pass
 		return None
 	
@@ -136,7 +136,7 @@ class Menzies:
 		try:
 			w = self.servers["way"].getWayHistory(id)
 			return w
-		except:
+		except TApplicationException:
 			pass
 		return None
 

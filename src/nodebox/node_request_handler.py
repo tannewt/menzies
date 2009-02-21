@@ -103,14 +103,13 @@ class NodeRequestHandler:
 			old_node = Node()
 			thrift_wrapper.from_string(old_node, data_pair[1])
 
-			node = self.getNode(node_id)
-			node.visible = False
-			node.version = old_node.version + 1
-			data = thrift_wrapper.to_string(node)
+			old_node.visible = False
+			old_node.version += 1
+			data = thrift_wrapper.to_string(old_node)
 			cursor.put(node_id_str, data, bdb.DB_KEYFIRST)
 
 			cursor.close()
-			return node.id
+			return old_node.version
 		else:
 			# There was no previous version!
 			cursor.close()

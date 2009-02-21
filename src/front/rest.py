@@ -211,10 +211,16 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 				print "editNode(",id,")"
 				node = self.node_from_xml(xml_in)
 				version = menzies.editNode(node)
-		elif bits[0] == "way" and bits[1]=="create":
-			way = self.way_from_xml(xml_in)
-			print "createWay(",way,")"
-			id = menzies.createWay(way)
+		elif bits[0] == "way":
+			if bits[1]=="create":
+				way = self.way_from_xml(xml_in)
+				print "createWay(",way,")"
+				id = menzies.createWay(way)
+			else:
+				id = long(bits[1])
+				print "editWay(",id,")"
+				way = self.way_from_xml(xml_in)
+				version = menzies.editWay(way)
 		elif bits[0] == "relation" and bits[1]=="create":
 			relation = self.relation_from_xml(xml_in)
 			print "createRelation(",relation,")"
@@ -506,6 +512,17 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 			print "deleteNode(",id,")"
 
 			version = menzies.deleteNode(id)
+
+			self.send_response(200)
+			self.send_header("Content-type", "text/html")
+			self.send_header("Content-length", len(str(version)))
+			self.end_headers()
+			self.wfile.write(str(version))
+		elif bits[0] == "way":
+			id = long(bits[1])
+			print "deleteWay(",id,")"
+
+			version = menzies.deleteWay(id)
 
 			self.send_response(200)
 			self.send_header("Content-type", "text/html")
