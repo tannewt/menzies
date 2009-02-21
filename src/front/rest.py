@@ -197,10 +197,16 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 		xml_in = self.rfile.read(int(self.headers["content-length"]))
 		print xml_in
 		bits,args = self.parse_path()
-		if bits[0] == "node" and bits[1]=="create":
-			node = self.node_from_xml(xml_in)
-			print "createNode(",node,")"
-			id = menzies.createNode(node)
+		if bits[0] == "node":
+			if bits[1]=="create":
+				node = self.node_from_xml(xml_in)
+				print "createNode(",node,")"
+				id = menzies.createNode(node)
+			else:
+				id = long(bits[1])
+				print "editNode(",id,")"
+				node = self.node_from_xml(xml_in)
+				version = menzies.editNode(node)
 		elif bits[0] == "way" and bits[1]=="create":
 			way = self.way_from_xml(xml_in)
 			print "createWay(",way,")"
@@ -463,7 +469,19 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 			print "getAll(",box,")"
 	
 	def do_DELETE(self):
-		pass
+		print self.command, self.path, self.headers
+		bits, args = self.parse_path()
+		if bits[0] == "node":
+			id = long(bits[1])
+			print "deleteNode(",id,")"
+
+			version = menzies.deleteNode(id)
+
+			self.send_response(200)
+			self.send_header("Content-type", "text/html")
+			self.send_header("Content-length", len(str(version)))
+			self.end_headers()
+			self.wfile.write(str(version))
 
 if __name__=="__main__":
 	httpd = HTTPServer(("",8001),OpenStreetMapHandler)

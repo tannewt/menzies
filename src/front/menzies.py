@@ -64,12 +64,12 @@ class Menzies:
 				pass
 		return None
 	
-	def deleteNode(self, node):
+	def deleteNode(self, node_id):
 		for s in self.servers["node"]:
 			try:
-				n = s.deleteNode(node)
+				n = s.deleteNode(node_id)
 				return n
-			except:
+			except TApplicationException:
 				pass
 		return None
 	
