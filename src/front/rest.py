@@ -496,12 +496,33 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					self.wfile.write(xml_str)
 				else:
 					self.send_response(410)
-					self.end_headers()	
+					self.end_headers()
 		elif bits[0]=="changeset":
 			print "changeset"
 		elif bits[0]=="map":
 			args = args["bbox"]
-			box = data.BBox(min_lat=args[1],max_lat=args[3],min_lon=args[0],max_lon=args[2])
+			box = data.BBox(min_lat=float(args[1]),max_lat=float(args[3]),min_lon=float(args[0]),max_lon=float(args[2]))
+			osm = menzies.getAllInBounds(box)
+			if osm:
+				doc = impl.createDocument(None, "osm", None)
+				root = doc.documentElement
+				print osm
+				for relation in osm.relations:
+					root.appendChild(self.relation_to_xml(doc, relation))
+				for way in osm.ways:
+					root.appendChild(self.way_to_xml(doc, way))
+				for node in osm.nodes:
+					root.appendChild(self.node_to_xml(doc, node))
+
+				xml_str = doc.toxml()
+				self.send_response(200)
+				self.send_header("Content-type", "text/xml")
+				self.send_header("Content-length", str(len(xml_str)))
+				self.end_headers()
+				self.wfile.write(xml_str)
+			else:
+				self.send_response(410)
+				self.end_headers()
 			print "getAll(",box,")"
 	
 	def do_DELETE(self):

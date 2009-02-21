@@ -37,6 +37,21 @@ class Menzies:
 
 		self.next_node_id = 0
 	
+	def getAllInBounds(self, box):
+		osm = Osm()
+
+		osm.relations = []
+		osm.ways = []
+		osm.nodes = []
+
+		#try:
+		for node in self.servers["node"][0].getNodesInBounds(box):
+			osm.nodes.append(node)
+		#except TApplicationException:
+		#	pass
+
+		return osm
+
 	def getNode(self,id):
 		for s in self.servers["node"]:
 			try:

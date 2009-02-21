@@ -137,7 +137,7 @@ class NodeRequestHandler:
 			cursor.close()
 
 	def getNodesInBounds(self, bounds):
-		if Rtree:
+		if False:
 			node_ids = self.spatial_index.intersection((bounds.min_lat, bounds.min_lon, bounds.max_lat, bounds.max_lon))
 			return self.getNodes(node_ids)
 		else:		
