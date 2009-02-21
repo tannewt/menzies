@@ -167,6 +167,14 @@ class Menzies:
 			pass
 		return None
 
+	def getRelationsFromRelation(self, id):
+		try:
+			relations = self.servers["relation"].getRelationsFromRelation(id)
+			return relations
+		except TApplicationException:
+			pass
+		return None
+
 	def getRelation(self, id):
 		try:
 			relation = self.servers["relation"].getRelation(id)

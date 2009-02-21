@@ -1,4 +1,4 @@
-<osm><relation id="-1" timestamp="2009-02-09T13:55:27Z" user="JasonKivlighn">
+<osm><relation id="-1" timestamp="2009-02-09T13:55:27Z" user="JasonKivlighn" visible="true">
 	<member type="node" ref="0" role=""/>
 	<member type="node" ref="1" role=""/>
 	<member type="way" ref="0" role=""/>

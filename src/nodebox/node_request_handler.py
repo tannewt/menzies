@@ -105,7 +105,7 @@ class NodeRequestHandler:
 
 			node = self.getNode(node_id)
 			node.visible = False
-			node.version = old_node.version + 1 # This is bound to have concurrency issues
+			node.version = old_node.version + 1
 			data = thrift_wrapper.to_string(node)
 			cursor.put(node_id_str, data, bdb.DB_KEYFIRST)
 

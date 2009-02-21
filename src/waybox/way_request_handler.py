@@ -21,6 +21,8 @@ class WayRequestHandler:
 		self.reverse_node_index.set_flags(bdb.DB_DUP)
 		self.reverse_node_index.open("ways_reverse_node_index.db","Reverse Node Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
+		self.next_id = 0
+
 		#self.debug_print_db()
 		#self.debug_print_reverse_node_index()
 
@@ -113,6 +115,9 @@ class WayRequestHandler:
 		return ways
 
 	def createWay(self, way):
+		way.id = self.next_id
+		self.next_id += 1
+
 		way.version = 1
 
 		way_id_str = "%d"%way.id

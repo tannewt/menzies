@@ -24,6 +24,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 		node.lat = float(e.getAttribute("lat"))
 		node.lon = float(e.getAttribute("lon"))
 		node.visible = e.getAttribute("visible")=="true"
+		node.user = e.getAttribute("user").encode("utf-8")
 		#node.timestamp = e.getAttribute("timestamp")
 		node.timestamp = 9999
 		node.tags = {}
@@ -40,6 +41,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 		way = data.Way()
 		way.id = long(e.getAttribute("id"))
 		way.visible = e.getAttribute("visible")=="true"
+		way.user = e.getAttribute("user").encode("utf-8")
 		#way.timestamp = e.getAttribute("timestamp")
 		way.timestamp = 9999
 		way.tags = {}
@@ -59,6 +61,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 		relation = data.Relation()
 		relation.id = long(e.getAttribute("id"))
 		relation.visible = e.getAttribute("visible")=="true"
+		relation.user = e.getAttribute("user").encode("utf-8")
 		#relation.timestamp = e.getAttribute("timestamp")
 		relation.timestamp = 9999
 		relation.tags = {}
@@ -135,6 +138,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 
 
 	def relation_to_xml(self, doc, o):
+		print o
 		relation = doc.createElement("relation")
 		relation.setAttribute("id",str(o.id))
 		relation.setAttribute("user",o.user)
@@ -144,13 +148,13 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 			relation.setAttribute("visible","false")
 		for member in o.members:
 			m = doc.createElement("member")
-			if member.node:
+			if member.node != None:
 				m.setAttribute("type", "node")
 				m.setAttribute("ref", str(member.node))
-			elif member.way:
+			elif member.way != None:
 				m.setAttribute("type", "way")
 				m.setAttribute("ref", str(member.way))
-			elif member.relation:
+			elif member.relation != None:
 				m.setAttribute("type", "relation")
 				m.setAttribute("ref", str(member.relation))
 			m.setAttribute("role", member.role)
@@ -285,7 +289,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					self.end_headers()					
 			elif bits[2]=="relations":
 				id = long(bits[1])
-				print 9,"relations"
+				print 9,"relations from node"
 				relations = menzies.getRelationsFromNode(id)
 				if relations:
 					doc = impl.createDocument(None, "osm", None)
@@ -387,7 +391,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					self.end_headers()	
 				
 			elif bits[2]=="relations":
-				print 17,"relations"
+				print 17,"relations from way"
 				id = long(bits[1])
 				relations = menzies.getRelationsFromWay(id)
 				if relations:
@@ -446,7 +450,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					self.end_headers()
 			elif bits[2]=="relations":
 				id = long(bits[1])
-				print "relations"
+				print "relations from relation"
 				relations = menzies.getRelationsFromRelation(id)
 				if relations:
 					doc = impl.createDocument(None, "osm", None)
