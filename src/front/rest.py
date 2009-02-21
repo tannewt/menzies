@@ -388,8 +388,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					self.wfile.write(xml_str)
 				else:
 					self.send_response(410)
-					self.end_headers()	
-				
+					self.end_headers()
 			elif bits[2]=="relations":
 				print 17,"relations from way"
 				id = long(bits[1])
@@ -458,10 +457,37 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 					print relations
 					for relation in relations:
 						root.appendChild(self.relation_to_xml(doc, relation))
+
+					xml_str = doc.toxml()
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(xml_str)
+				else:
+					self.send_response(410)
+					self.end_headers()
+			elif bits[2]=="full":
+				id = long(bits[1])
+				print "getRelationFull"
+				osm = menzies.getRelationFull(id)
+				if osm:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print osm
+					for relation in osm.relations:
+						root.appendChild(self.relation_to_xml(doc, relation))
+					for way in osm.ways:
+						root.appendChild(self.way_to_xml(doc, way))
+					for node in osm.nodes:
+						root.appendChild(self.node_to_xml(doc, node))
+
+					xml_str = doc.toxml()
+					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
+					self.end_headers()
+					self.wfile.write(xml_str)
 				else:
 					self.send_response(410)
 					self.end_headers()	

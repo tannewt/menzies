@@ -151,6 +151,7 @@ class Menzies:
 		except TApplicationException:
 			pass
 		return None
+
 	def getRelationsFromNode(self, id):
 		try:
 			relations = self.servers["relation"].getRelationsFromNode(id)
@@ -179,6 +180,27 @@ class Menzies:
 		try:
 			relation = self.servers["relation"].getRelation(id)
 			return relation
+		except TApplicationException:
+			pass
+		return None
+
+	def getRelationFull(self, id):
+		try:
+			osm = Osm()
+			osm.relations = [self.servers["relation"].getRelation(id)]
+
+			osm.nodes = []
+			osm.ways = []
+
+			for member in osm.relations[0].members:
+				if member.node != None:
+					osm.nodes.append(self.servers["node"][0].getNode(member.node))
+				elif member.way != None:
+					osm.ways.append(self.servers["way"].getWay(member.way))
+				elif member.relation != None:
+					osm.relations.append(self.servers["relation"].getRelation(member.relation))
+
+			return osm
 		except TApplicationException:
 			pass
 		return None
