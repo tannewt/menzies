@@ -40,15 +40,36 @@ class Menzies:
 	def getAllInBounds(self, box):
 		osm = Osm()
 
-		osm.relations = []
-		osm.ways = []
 		osm.nodes = []
+		osm.ways = []
+		osm.relations = []
 
-		#try:
-		for node in self.servers["node"][0].getNodesInBounds(box):
-			osm.nodes.append(node)
-		#except TApplicationException:
-		#	pass
+		relation_set = set()
+		way_set = set()
+
+		try:
+			for node in self.servers["node"][0].getNodesInBounds(box):
+				osm.nodes.append(node)
+				for way in self.servers["way"].getWaysFromNode(node.id):
+					if way.id not in way_set:
+						osm.ways.append(way)
+						way_set.add(way.id)
+
+					for relation in self.servers["relation"].getRelationsFromWay(way.id):
+						if relation.id not in relation_set:
+							osm.relations.append(relation)
+							relation_set.add(relation.id)
+				for relation in self.servers["relation"].getRelationsFromNode(node.id):
+					if relation.id not in relation_set:
+						osm.relations.append(relation)
+						relation_set.add(relation.id)
+
+					for relation_in_relation in self.servers["relation"].getRelationsFromRelation(relation.id):
+						if relation_in_relation.id not in relation_set:
+							osm.relations.append(relation_in_relation)
+							relation_set.add(relation_in_relation.id)
+		except TApplicationException:
+			pass
 
 		return osm
 
