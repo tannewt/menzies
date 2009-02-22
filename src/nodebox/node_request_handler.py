@@ -93,8 +93,8 @@ class NodeRequestHandler:
 		cursor.close()
 		return nodes
 
-	def deleteNode(self, node):
-		node_id_str = "%d"%node.id
+	def deleteNode(self, node_id):
+		node_id_str = "%d"%node_id
 
 		# Get the last version
 		cursor = self.db.cursor()
@@ -103,13 +103,13 @@ class NodeRequestHandler:
 			old_node = Node()
 			thrift_wrapper.from_string(old_node, data_pair[1])
 
-			node.visible = False
-			node.version = old_way.version + 1 # This is bound to have concurrency issues
-			data = thrift_wrapper.to_string(node)
+			old_node.visible = False
+			old_node.version += 1
+			data = thrift_wrapper.to_string(old_node)
 			cursor.put(node_id_str, data, bdb.DB_KEYFIRST)
 
 			cursor.close()
-			return node.id
+			return old_node.version
 		else:
 			# There was no previous version!
 			cursor.close()
@@ -131,13 +131,13 @@ class NodeRequestHandler:
 			cursor.put(node_id_str, data, bdb.DB_KEYFIRST)
 
 			cursor.close()
-			return node.id
+			return node.version
 		else:
 			# There was no previous version!
 			cursor.close()
 
 	def getNodesInBounds(self, bounds):
-		if Rtree:
+		if False:
 			node_ids = self.spatial_index.intersection((bounds.min_lat, bounds.min_lon, bounds.max_lat, bounds.max_lon))
 			return self.getNodes(node_ids)
 		else:		

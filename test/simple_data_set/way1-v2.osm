@@ -1,0 +1,8 @@
+<osm><way id="0" timestamp="2009-02-09T13:55:27Z" user="CoreyBurger" visible="true">
+	<nd ref="0"/>
+	<nd ref="1"/>
+	<tag k="created_by" v="Your Imagination"/>
+	<tag k="highway" v="service"/>
+</way>
+</osm>
+

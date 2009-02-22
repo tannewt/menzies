@@ -1,4 +1,8 @@
 from node import NodeServer
+from way import WayServer
+from relation import RelationServer
+
+from data.ttypes import *
 
 from thrift.transport import TSocket
 from thrift.transport import TTransport
@@ -20,18 +24,40 @@ class Menzies:
 		transport = TSocket.TSocket('localhost', 9090)
 		transport = TTransport.TBufferedTransport(transport)
 		protocol = TBinaryProtocol.TBinaryProtocol(transport)
-		client = NodeServer.Client(protocol)
+		client = WayServer.Client(protocol)
 		transport.open()
 		self.servers["way"] = client
 
+		transport = TSocket.TSocket('localhost', 9092)
+		transport = TTransport.TBufferedTransport(transport)
+		protocol = TBinaryProtocol.TBinaryProtocol(transport)
+		client = RelationServer.Client(protocol)
+		transport.open()
+		self.servers["relation"] = client
+
 		self.next_node_id = 0
 	
+	def getAllInBounds(self, box):
+		osm = Osm()
+
+		osm.relations = []
+		osm.ways = []
+		osm.nodes = []
+
+		#try:
+		for node in self.servers["node"][0].getNodesInBounds(box):
+			osm.nodes.append(node)
+		#except TApplicationException:
+		#	pass
+
+		return osm
+
 	def getNode(self,id):
 		for s in self.servers["node"]:
 			try:
 				n = s.getNode(id)
 				return n
-			except:
+			except TApplicationException:
 				pass
 		return None
 	
@@ -40,7 +66,7 @@ class Menzies:
 			try:
 				n = s.getNodeVersion(id, version)
 				return n
-			except:
+			except TApplicationException:
 				pass
 		return None
 	
@@ -49,16 +75,16 @@ class Menzies:
 			try:
 				n = s.editNode(node)
 				return n
-			except:
+			except TApplicationException:
 				pass
 		return None
 	
-	def deleteNode(self, node):
+	def deleteNode(self, node_id):
 		for s in self.servers["node"]:
 			try:
-				n = s.deleteNode(node)
+				n = s.deleteNode(node_id)
 				return n
-			except:
+			except TApplicationException:
 				pass
 		return None
 	
@@ -74,7 +100,7 @@ class Menzies:
 			try:
 				n = s.getNodeHistory(id)
 				return n
-			except:
+			except TApplicationException:
 				pass
 		return None
 
@@ -82,7 +108,7 @@ class Menzies:
 		try:
 			ways = self.servers["way"].getWaysFromNode(id)
 			return ways
-		except:
+		except TApplicationException:
 			pass
 		return None
 
@@ -90,7 +116,7 @@ class Menzies:
 		try:
 			way = self.servers["way"].getWay(id)
 			return way
-		except:
+		except TApplicationException:
 			pass
 		return None
 
@@ -98,15 +124,15 @@ class Menzies:
 		try:
 			w = self.servers["way"].getWayVersion(id, version)
 			return w
-		except:
+		except TApplicationException:
 			pass
 		return None
 	
 	def editWay(self, way):
 		try:
-			w = self.servers["way"].editNode(way)
+			w = self.servers["way"].editWay(way)
 			return w
-		except:
+		except TApplicationException:
 			pass
 		return None
 	
@@ -114,22 +140,18 @@ class Menzies:
 		try:
 			w = self.servers["way"].deleteWay(way)
 			return w
-		except:
+		except TApplicationException:
 			pass
 		return None
 	
 	def createWay(self, way):
-		way.id = self.next_way_id
-		self.next_way_id+=1
-		
-		self.servers["way"].createNode(way)
-		return way.id
-	
+		return self.servers["way"].createWay(way)
+
 	def getWayHistory(self, id):
 		try:
 			w = self.servers["way"].getWayHistory(id)
 			return w
-		except:
+		except TApplicationException:
 			pass
 		return None
 
@@ -138,10 +160,66 @@ class Menzies:
 			osm = Osm()
 			osm.ways = [self.servers["way"].getWay(id)]
 			osm.nodes = []
-			for node_id in way.nodes:
+			for node_id in osm.ways[0].nodes:
 				osm.nodes.append(self.servers["node"][0].getNode(node_id))
 			return osm
-		except:
+		except TApplicationException:
 			pass
 		return None
+
+	def getRelationsFromNode(self, id):
+		try:
+			relations = self.servers["relation"].getRelationsFromNode(id)
+			return relations
+		except TApplicationException:
+			pass
+		return None
+
+	def getRelationsFromWay(self, id):
+		try:
+			relations = self.servers["relation"].getRelationsFromWay(id)
+			return relations
+		except TApplicationException:
+			pass
+		return None
+
+	def getRelationsFromRelation(self, id):
+		try:
+			relations = self.servers["relation"].getRelationsFromRelation(id)
+			return relations
+		except TApplicationException:
+			pass
+		return None
+
+	def getRelation(self, id):
+		try:
+			relation = self.servers["relation"].getRelation(id)
+			return relation
+		except TApplicationException:
+			pass
+		return None
+
+	def getRelationFull(self, id):
+		try:
+			osm = Osm()
+			osm.relations = [self.servers["relation"].getRelation(id)]
+
+			osm.nodes = []
+			osm.ways = []
+
+			for member in osm.relations[0].members:
+				if member.node != None:
+					osm.nodes.append(self.servers["node"][0].getNode(member.node))
+				elif member.way != None:
+					osm.ways.append(self.servers["way"].getWay(member.way))
+				elif member.relation != None:
+					osm.relations.append(self.servers["relation"].getRelation(member.relation))
+
+			return osm
+		except TApplicationException:
+			pass
+		return None
+
+	def createRelation(self, relation):
+		return self.servers["relation"].createRelation(relation)
 

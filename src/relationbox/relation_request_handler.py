@@ -29,6 +29,8 @@ class RelationRequestHandler:
 		self.reverse_way_index.set_flags(bdb.DB_DUP)
 		self.reverse_way_index.open("relations_reverse_way_index.db","Reverse Relation Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
+		self.next_id = 0
+
 		#self.debug_print_db()
 
 	def debug_print_db(self):
@@ -108,7 +110,44 @@ class RelationRequestHandler:
 				relations.append(relation)
 		return relations
 
+	def getRelationsFromWay(self, way_id):
+		cursor = self.reverse_way_index.cursor()
+		relation_ids = set()
+		relation_id_str_pair = cursor.get("%d"%way_id, bdb.DB_SET)
+		while relation_id_str_pair:
+			relation_ids.add(relation_id_str_pair[1])
+			relation_id_str_pair = cursor.get("%d"%way_id, bdb.DB_NEXT_DUP)
+
+		relations = []
+		for relation_id_str in relation_ids:
+			data = self.db.get(relation_id_str)
+			if data:
+				relation = Relation()
+				thrift_wrapper.from_string(relation, data)
+				relations.append(relation)
+		return relations
+
+	def getRelationsFromRelation(self, relation_id):
+		cursor = self.reverse_relation_index.cursor()
+		relation_ids = set()
+		relation_id_str_pair = cursor.get("%d"%relation_id, bdb.DB_SET)
+		while relation_id_str_pair:
+			relation_ids.add(relation_id_str_pair[1])
+			relation_id_str_pair = cursor.get("%d"%relation_id, bdb.DB_NEXT_DUP)
+
+		relations = []
+		for relation_id_str in relation_ids:
+			data = self.db.get(relation_id_str)
+			if data:
+				relation = Relation()
+				thrift_wrapper.from_string(relation, data)
+				relations.append(relation)
+		return relations
+
 	def createRelation(self, relation):
+		relation.id = self.next_id
+		self.next_id += 1
+
 		relation.version = 1
 
 		relation_id_str = "%d"%relation.id
@@ -118,8 +157,13 @@ class RelationRequestHandler:
 		cursor.put(relation_id_str, data, bdb.DB_KEYFIRST)
 
 		# Update indexes
-		#for node_id in relation.nodes:
-		#	self.reverse_node_index.put("%d"%node_id, relation_id_str)
+		for member in relation.members:
+			if member.node != None:
+				self.reverse_node_index.put("%d"%member.node, relation_id_str)
+			elif member.way != None:
+				self.reverse_way_index.put("%d"%member.way, relation_id_str)
+			elif member.relation != None:
+				self.reverse_relation_index.put("%d"%member.relation, relation_id_str)
 
 		return relation.id
 

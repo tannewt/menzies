@@ -27,6 +27,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		node.lat = float(e.getAttribute("lat"))
 		node.lon = float(e.getAttribute("lon"))
 		node.visible = e.getAttribute("visible")=="true"
+		node.user = e.getAttribute("user").encode("utf-8")
 		#node.timestamp = e.getAttribute("timestamp")
 		node.timestamp = 9999
 		node.tags = {}
@@ -43,6 +44,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		way = data.Way()
 		way.id = long(e.getAttribute("id"))
 		way.visible = e.getAttribute("visible")=="true"
+		way.user = e.getAttribute("user").encode("utf-8")
 		#way.timestamp = e.getAttribute("timestamp")
 		way.timestamp = 9999
 		way.tags = {}
@@ -62,6 +64,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		relation = data.Relation()
 		relation.id = long(e.getAttribute("id"))
 		relation.visible = e.getAttribute("visible")=="true"
+		relation.user = e.getAttribute("user").encode("utf-8")
 		#relation.timestamp = e.getAttribute("timestamp")
 		relation.timestamp = 9999
 		relation.tags = {}
@@ -72,7 +75,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			if c.tagName == "tag":
 				relation.tags[c.getAttribute("k")] = c.getAttribute("v")
 			elif c.tagName == "member":
-				relations.members.append(parse_member_xml(c))
+				relation.members.append(self.parse_member_xml(c))
 		return relation
 
 	def parse_member_xml(self, e):
@@ -89,7 +92,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			member.relation = long(e.getAttribute("ref"))		
 
 		return member
-	
+
 	def node_to_xml(self, doc, o):
 		node = doc.createElement("node")
 		#node.tagName = "node"
@@ -120,9 +123,9 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			way.setAttribute("visible","true")
 		else:
 			way.setAttribute("visible","false")
-		for n in o.nodes:
+		for node_id in o.nodes:
 			nd = doc.createElement("nd")
-			nd.setAttribute("ref",str(n.id))
+			nd.setAttribute("ref",str(node_id))
 			way.appendChild(nd)
 		for tag in o.tags:
 			t = doc.createElement("tag")
@@ -134,10 +137,11 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	def way_from_xml(self, s):
 		dom = parseString(s)
 		assert dom.documentElement.tagName == "osm"
-		return parse_way_xml(dom.documentElement.firstChild)
+		return self.parse_way_xml(dom.documentElement.firstChild)
 
 
 	def relation_to_xml(self, doc, o):
+		print o
 		relation = doc.createElement("relation")
 		relation.setAttribute("id",str(o.id))
 		relation.setAttribute("user",o.user)
@@ -147,28 +151,29 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			relation.setAttribute("visible","false")
 		for member in o.members:
 			m = doc.createElement("member")
-			for n in member.nodes:
+			if member.node != None:
 				m.setAttribute("type", "node")
-				m.setAttribute("ref", str(n.id))
-			for w in member.ways:
+				m.setAttribute("ref", str(member.node))
+			elif member.way != None:
 				m.setAttribute("type", "way")
-				m.setAttribute("ref", str(w.id))
-			for r in member.relations:
+				m.setAttribute("ref", str(member.way))
+			elif member.relation != None:
 				m.setAttribute("type", "relation")
-				m.setAttribute("ref", str(r.id))
-			m.setAttribute("role", m.role)
+				m.setAttribute("ref", str(member.relation))
+			m.setAttribute("role", member.role)
 			relation.appendChild(m)
-		for tag in o.tags:
-			t = doc.createElement("tag")
-			t.setAttribute("k",tag)
-			t.setAttribute("v",o.tags[tag])
-			relation.appendChild(t)
+		if o.tags:
+			for tag in o.tags:
+				t = doc.createElement("tag")
+				t.setAttribute("k",tag)
+				t.setAttribute("v",o.tags[tag])
+				relation.appendChild(t)
 		return relation	
 	
 	def relation_from_xml(self, s):
 		dom = parseString(s)
 		assert dom.documentElement.tagName == "osm"
-		return parse_relation_xml(dom.documentElement.firstChild)
+		return self.parse_relation_xml(dom.documentElement.firstChild)
 
 	def parse_path(self):
 		path = self.path[len(self.API_PREFIX):]
@@ -199,15 +204,38 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		xml_in = self.rfile.read(int(self.headers["content-length"]))
 		print xml_in
 		bits,args = self.parse_path()
-		if bits[0] == "node" and bits[1]=="create":
-			node = self.node_from_xml(xml_in)
-			print "createNode(",node,")"
-			id = menzies.createNode(node)
-			print "id",id
+		if bits[0] == "node":
+			if bits[1]=="create":
+				node = self.node_from_xml(xml_in)
+				print "createNode(",node,")"
+				id = menzies.createNode(node)
+			else:
+				id = long(bits[1])
+				print "editNode(",id,")"
+				node = self.node_from_xml(xml_in)
+				version = menzies.editNode(node)
+		elif bits[0] == "way":
+			if bits[1]=="create":
+				way = self.way_from_xml(xml_in)
+				print "createWay(",way,")"
+				id = menzies.createWay(way)
+			else:
+				id = long(bits[1])
+				print "editWay(",id,")"
+				way = self.way_from_xml(xml_in)
+				version = menzies.editWay(way)
+		elif bits[0] == "relation" and bits[1]=="create":
+			relation = self.relation_from_xml(xml_in)
+			print "createRelation(",relation,")"
+			id = menzies.createRelation(relation)
+
+		print "id",id
+
 		self.send_response(200)
+		self.send_header("Content-type", "text/html")
+		self.send_header("Content-length", len(str(id)))
 		self.end_headers()
 		self.wfile.write(str(id))
-	
 	def do_GET(self):
 		bits,args = self.parse_path()
 		if bits[0]=="node":
@@ -270,7 +298,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					self.end_headers()					
 			elif bits[2]=="relations":
 				id = long(bits[1])
-				print 9,"relations"
+				print 9,"relations from node"
 				relations = menzies.getRelationsFromNode(id)
 				if relations:
 					doc = impl.createDocument(None, "osm", None)
@@ -356,8 +384,10 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					doc = impl.createDocument(None, "osm", None)
 					root = doc.documentElement
 					print osm
-					for way in way:
+					for way in osm.ways:
 						root.appendChild(self.way_to_xml(doc, way))
+					for node in osm.nodes:
+						root.appendChild(self.node_to_xml(doc, node))
 
 					xml_str = doc.toxml()
 					self.send_response(200)
@@ -367,21 +397,34 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					self.wfile.write(xml_str)
 				else:
 					self.send_response(410)
-					self.end_headers()	
-				
+					self.end_headers()
 			elif bits[2]=="relations":
-				print 17,"relations"
+				print 17,"relations from way"
+				id = long(bits[1])
+				relations = menzies.getRelationsFromWay(id)
+				if relations:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print relations
+					for relation in relations:
+						root.appendChild(self.relation_to_xml(doc, relation))
+					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.end_headers()
+					self.wfile.write(doc.toxml())
+				else:
+					self.send_response(410)
+					self.end_headers()	
 			else:
 				id = long(bits[1])
 				version = int(bits[2])
 				print 16,"version", version
-				ways = menzies.getWayVersion(id, version)
-				if ways:
+				way = menzies.getWayVersion(id, version)
+				if way:
 					doc = impl.createDocument(None, "osm", None)
 					root = doc.documentElement
-					print ways
-					for way in ways:
-						root.appendChild(self.way_to_xml(doc, way))
+					print way
+					root.appendChild(self.way_to_xml(doc, way))
 
 					xml_str = doc.toxml()
 					self.send_response(200)
@@ -393,16 +436,123 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					self.send_response(410)
 					self.end_headers()	
 		elif bits[0]=="relation":
-			print "relation"
+			print bits
+			if len(bits)==2:
+				id = long(bits[1])
+				print 2,"getRelation(",id,")"
+				relation = menzies.getRelation(id)
+				if relation:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print relation
+					root.appendChild(self.relation_to_xml(doc, relation))
+
+					xml_str = doc.toxml()
+					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
+					self.end_headers()
+					self.wfile.write(xml_str)
+				else:
+					self.send_response(410)
+					self.end_headers()
+			elif bits[2]=="relations":
+				id = long(bits[1])
+				print "relations from relation"
+				relations = menzies.getRelationsFromRelation(id)
+				if relations:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print relations
+					for relation in relations:
+						root.appendChild(self.relation_to_xml(doc, relation))
+
+					xml_str = doc.toxml()
+					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
+					self.end_headers()
+					self.wfile.write(xml_str)
+				else:
+					self.send_response(410)
+					self.end_headers()
+			elif bits[2]=="full":
+				id = long(bits[1])
+				print "getRelationFull"
+				osm = menzies.getRelationFull(id)
+				if osm:
+					doc = impl.createDocument(None, "osm", None)
+					root = doc.documentElement
+					print osm
+					for relation in osm.relations:
+						root.appendChild(self.relation_to_xml(doc, relation))
+					for way in osm.ways:
+						root.appendChild(self.way_to_xml(doc, way))
+					for node in osm.nodes:
+						root.appendChild(self.node_to_xml(doc, node))
+
+					xml_str = doc.toxml()
+					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
+					self.end_headers()
+					self.wfile.write(xml_str)
+				else:
+					self.send_response(410)
+					self.end_headers()
 		elif bits[0]=="changeset":
 			print "changeset"
 		elif bits[0]=="map":
 			args = args["bbox"]
-			box = data.BBox(min_lat=args[1],max_lat=args[3],min_lon=args[0],max_lon=args[2])
+			box = data.BBox(min_lat=float(args[1]),max_lat=float(args[3]),min_lon=float(args[0]),max_lon=float(args[2]))
+			osm = menzies.getAllInBounds(box)
+			if osm:
+				doc = impl.createDocument(None, "osm", None)
+				root = doc.documentElement
+				print osm
+				for relation in osm.relations:
+					root.appendChild(self.relation_to_xml(doc, relation))
+				for way in osm.ways:
+					root.appendChild(self.way_to_xml(doc, way))
+				for node in osm.nodes:
+					root.appendChild(self.node_to_xml(doc, node))
+
+				xml_str = doc.toxml()
+				self.send_response(200)
+				self.send_header("Content-type", "text/xml")
+				self.send_header("Content-length", str(len(xml_str)))
+				self.end_headers()
+				self.wfile.write(xml_str)
+			else:
+				self.send_response(410)
+				self.end_headers()
 			print "getAll(",box,")"
 	
 	def do_DELETE(self):
-		pass
+		print self.command, self.path, self.headers
+		bits, args = self.parse_path()
+		if bits[0] == "node":
+			id = long(bits[1])
+			print "deleteNode(",id,")"
+
+			version = menzies.deleteNode(id)
+
+			self.send_response(200)
+			self.send_header("Content-type", "text/html")
+			self.send_header("Content-length", len(str(version)))
+			self.end_headers()
+			self.wfile.write(str(version))
+		elif bits[0] == "way":
+			id = long(bits[1])
+			print "deleteWay(",id,")"
+
+			version = menzies.deleteWay(id)
+
+			self.send_response(200)
+			self.send_header("Content-type", "text/html")
+			self.send_header("Content-length", len(str(version)))
+			self.end_headers()
+			self.wfile.write(str(version))
 
 if __name__=="__main__":
 	httpd = ThreadingHTTPServer(("",8001),OpenStreetMapHandler)

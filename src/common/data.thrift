@@ -62,11 +62,10 @@ struct Way {
 }
 
 struct Member {
-	1: i64 ref,
-	2: string role,
-	3: optional i64 node,
-	4: optional i64 way,
-	5: optional i64 relation
+	1: string role,
+	2: optional i64 node,
+	3: optional i64 way,
+	4: optional i64 relation
 }
 
 struct Relation {
@@ -78,6 +77,7 @@ struct Relation {
 	6: i32 version,
 	7: i64 timestamp,
 	8: set<Member> members
+	9: map<string,string> tags,
 }
 
 struct BBox {
