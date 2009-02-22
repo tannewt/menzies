@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from BaseHTTPServer import *
+import BaseHTTPServer, SocketServer
 import sys
 
 sys.path.append("common/gen-py/")
@@ -13,7 +13,10 @@ from xml.dom import Node
 menzies = menzies.Menzies()
 impl = getDOMImplementation()
 
-class OpenStreetMapHandler (BaseHTTPRequestHandler):
+class ThreadingHTTPServer(SocketServer.ThreadingTCPServer,BaseHTTPServer.HTTPServer):
+	pass
+
+class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	API_PREFIX="/api/0.6/"
 
 	def parse_node_xml(self, e):
@@ -107,7 +110,7 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 	def node_from_xml(self, s):
 		dom = parseString(s)
 		assert dom.documentElement.tagName == "osm"
-		return parse_node_xml(dom.documentElement.firstChild)
+		return self.parse_node_xml(dom.documentElement.firstChild)
 
 	def way_to_xml(self, doc, o):
 		way = doc.createElement("way")
@@ -402,6 +405,6 @@ class OpenStreetMapHandler (BaseHTTPRequestHandler):
 		pass
 
 if __name__=="__main__":
-	httpd = HTTPServer(("",8001),OpenStreetMapHandler)
+	httpd = ThreadingHTTPServer(("",8001),OpenStreetMapHandler)
 	httpd.serve_forever()
 
