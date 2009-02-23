@@ -36,7 +36,7 @@ class Menzies:
 		self.servers["relation"] = client
 
 		self.next_node_id = 0
-	
+
 	def getAllInBounds(self, box):
 		osm = Osm()
 
@@ -68,8 +68,9 @@ class Menzies:
 						if relation_in_relation.id not in relation_set:
 							osm.relations.append(relation_in_relation)
 							relation_set.add(relation_in_relation.id)
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
 
 		return osm
 
@@ -78,8 +79,12 @@ class Menzies:
 			try:
 				n = s.getNode(id)
 				return n
-			except TApplicationException:
-				pass
+			except TApplicationException, e:
+				if e.type != TApplicationException.MISSING_RESULT:
+					raise e
+				else:
+					print e.message
+
 		return None
 	
 	def getNodeVersion(self, id, version):
@@ -87,8 +92,10 @@ class Menzies:
 			try:
 				n = s.getNodeVersion(id, version)
 				return n
-			except TApplicationException:
-				pass
+			except TApplicationException, e:
+				if e.type != TApplicationException.MISSING_RESULT:
+					raise e
+
 		return None
 	
 	def editNode(self, node):
@@ -96,8 +103,10 @@ class Menzies:
 			try:
 				n = s.editNode(node)
 				return n
-			except TApplicationException:
-				pass
+			except TApplicationException, e:
+				if e.type != TApplicationException.MISSING_RESULT:
+					raise e
+
 		return None
 	
 	def deleteNode(self, node_id):
@@ -105,8 +114,10 @@ class Menzies:
 			try:
 				n = s.deleteNode(node_id)
 				return n
-			except TApplicationException:
-				pass
+			except TApplicationException, e:
+				if e.type != TApplicationException.MISSING_RESULT:
+					raise e
+
 		return None
 	
 	def createNode(self, node):
@@ -121,48 +132,60 @@ class Menzies:
 			try:
 				n = s.getNodeHistory(id)
 				return n
-			except TApplicationException:
-				pass
+			except TApplicationException, e:
+				if e.type != TApplicationException.MISSING_RESULT:
+					raise e	
+		
 		return None
 
 	def getWaysFromNode(self, id):
 		try:
 			ways = self.servers["way"].getWaysFromNode(id)
 			return ways
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 
 	def getWay(self, id):
 		try:
 			way = self.servers["way"].getWay(id)
 			return way
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 
 	def getWayVersion(self, id, version):
 		try:
 			w = self.servers["way"].getWayVersion(id, version)
 			return w
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 	
 	def editWay(self, way):
 		try:
 			w = self.servers["way"].editWay(way)
 			return w
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 	
 	def deleteWay(self, way):
 		try:
 			w = self.servers["way"].deleteWay(way)
 			return w
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 	
 	def createWay(self, way):
@@ -172,8 +195,10 @@ class Menzies:
 		try:
 			w = self.servers["way"].getWayHistory(id)
 			return w
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 
 	def getWayFull(self, id):
@@ -184,40 +209,50 @@ class Menzies:
 			for node_id in osm.ways[0].nodes:
 				osm.nodes.append(self.servers["node"][0].getNode(node_id))
 			return osm
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 
 	def getRelationsFromNode(self, id):
 		try:
 			relations = self.servers["relation"].getRelationsFromNode(id)
 			return relations
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 
 	def getRelationsFromWay(self, id):
 		try:
 			relations = self.servers["relation"].getRelationsFromWay(id)
 			return relations
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 
 	def getRelationsFromRelation(self, id):
 		try:
 			relations = self.servers["relation"].getRelationsFromRelation(id)
 			return relations
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 
 	def getRelation(self, id):
 		try:
 			relation = self.servers["relation"].getRelation(id)
 			return relation
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 
 	def getRelationFull(self, id):
@@ -237,8 +272,10 @@ class Menzies:
 					osm.relations.append(self.servers["relation"].getRelation(member.relation))
 
 			return osm
-		except TApplicationException:
-			pass
+		except TApplicationException, e:
+			if e.type != TApplicationException.MISSING_RESULT:
+				raise e
+
 		return None
 
 	def createRelation(self, relation):

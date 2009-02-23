@@ -13,7 +13,7 @@ from xml.dom import Node
 menzies = menzies.Menzies()
 impl = getDOMImplementation()
 
-class ThreadingHTTPServer(SocketServer.ThreadingTCPServer,BaseHTTPServer.HTTPServer):
+class ThreadingHTTPServer(SocketServer.ForkingTCPServer,BaseHTTPServer.HTTPServer):
 	pass
 
 class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
