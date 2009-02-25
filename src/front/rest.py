@@ -10,7 +10,6 @@ import menzies
 from xml.dom.minidom import parseString,getDOMImplementation
 from xml.dom import Node
 
-menzies = menzies.Menzies()
 impl = getDOMImplementation()
 
 class ThreadingHTTPServer(SocketServer.ThreadingTCPServer,BaseHTTPServer.HTTPServer):
@@ -555,6 +554,13 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write(str(version))
 
 if __name__=="__main__":
+	if len(sys.argv) > 1:
+		num_nodeservers = int(sys.argv[1])
+	else:
+		num_nodeservers = 1
+	node_servers = map(lambda x: ("localhost", 9100+x), range(num_nodeservers))
+	servers={"node": node_servers,"way":('localhost','9090'),"relation":('localhost','9092')}
+	menzies = menzies.Menzies(servers)
 	httpd = ThreadingHTTPServer(("",8001),OpenStreetMapHandler)
 	httpd.serve_forever()
 

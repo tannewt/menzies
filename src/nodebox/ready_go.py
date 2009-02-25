@@ -13,9 +13,13 @@ from thrift.server import TServer
 
 from node_request_handler import NodeRequestHandler
 
+if len(sys.argv) > 1:
+	port = int(sys.argv[1])
+else:
+	port = 9091
 handler = NodeRequestHandler()
 processor = NodeServer.Processor(handler)
-transport = TSocket.TServerSocket(9091)
+transport = TSocket.TServerSocket(port)
 tfactory = TTransport.TBufferedTransportFactory()
 pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 

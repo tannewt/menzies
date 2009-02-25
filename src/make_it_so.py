@@ -7,7 +7,7 @@ import time
 config = {'way': {'args':[],'deps':[]},
 				'relation': {'args':[],'deps':[]},
 				'node': {'args':[],'deps':[]},
-				'nodes': {'num' : 1},
+				'nodes': {'num' : 4},
 				'front': {'args':[],
 									'deps':['way','relation','nodes']}}
 
@@ -58,9 +58,10 @@ for s in servers:
 	elif s=='nodes':
 		for i in range(config[s]["num"]):
 			name = "NodeServer%d"%i
-			cmd = ["python","nodebox/ready_go.py"]+config["node"]["args"]
+			cmd = ["python","nodebox/ready_go.py"]+[str(9100+i)]
 			p = run(cmd, name)
 			processes.append((name, p))
+			time.sleep(1)
 	elif s=='node':
 		name = "NodeServer"
 		cmd = ["python","nodebox/ready_go.py"]+config[s]["args"]
@@ -68,7 +69,7 @@ for s in servers:
 		processes.append((name, p))
 	elif s=='front':
 		name = "Frontend"
-		cmd = ["python","front/rest.py"]+config[s]["args"]
+		cmd = ["python","front/rest.py"]+[str(config["nodes"]["num"])]+config[s]["args"]
 		p = run(cmd, name)
 		processes.append((name, p))
 	time.sleep(1)
