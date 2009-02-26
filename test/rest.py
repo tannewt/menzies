@@ -17,7 +17,7 @@ node="""<osm><node id="-1" lat="61.8083953857422" lon="10.8497076034546" visible
    <tag k="tourism" v="hotel" />
    <tag k="name" v="Cockroach Inn" />
 </node></osm>"""
-c.request("PUT", "/api/0.6/node/create", node)
+c.request("PUT", "/api/0.6/node/create", node, {"Authorization":"Basic lkajslgjls"})
 r = c.getresponse()
 id = r.read()
 print "node/create",r.status, r.reason,"id",id

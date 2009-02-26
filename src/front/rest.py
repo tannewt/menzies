@@ -2,6 +2,7 @@
 
 import BaseHTTPServer, SocketServer
 import sys
+import base64
 
 sys.path.append("common/gen-py/")
 import data.ttypes as data
@@ -196,12 +197,29 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	
 	def do_POST(self):
 		print "POST"
+		
+	#class MessageClass:
+	#	def __init__(self, fp, seekable=0):
+	#		line = fp.readline().strip()
+	#		while line.strip()!="":
+	#			print "\"",line,"\""
+	#			line = fp.readline()
+	#		sys.stdout.flush()
+	#		self.dict = {}
 	
 	def do_PUT(self):
 		global menzies
-		print self.command, self.path,self.headers
-		xml_in = self.rfile.read(int(self.headers["content-length"]))
-		print xml_in
+		xml_in = self.rfile.read(int(self.headers["content-length"])).strip('\0')
+		if "authorization" in self.headers.dict:
+			auth = base64.b64decode(self.headers.dict["authorization"].split()[1])
+			user,passwd = auth.split(":")
+			print "user",user,"passwd",passwd
+			sys.stdout.flush()
+		else:
+			self.send_response(401)
+			self.send_header("WWW-Authenticate", "Basic realm=\"menzies\"")
+			self.end_headers()
+			return
 		bits,args = self.parse_path()
 		if bits[0] == "node":
 			if bits[1]=="create":
@@ -227,6 +245,14 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			relation = self.relation_from_xml(xml_in)
 			print "createRelation(",relation,")"
 			id = menzies.createRelation(relation)
+		elif bits[0] == "changeset":
+			if bits[1]=="create":
+				#way = self.way_from_xml(xml_in)
+				print "createChangeset(",")"
+				id = menzies.createChangeset(xml_in)
+		else:
+			# should send error code
+			return
 
 		print "id",id
 
@@ -235,8 +261,11 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		self.send_header("Content-length", len(str(id)))
 		self.end_headers()
 		self.wfile.write(str(id))
+
 	def do_GET(self):
 		bits,args = self.parse_path()
+		print "headers",self.headers.headers,"path",self.path
+		sys.stdout.flush()
 		if bits[0]=="node":
 			print bits
 			if len(bits)==2:

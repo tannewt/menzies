@@ -9,6 +9,8 @@ from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
+import sys
+
 class Menzies:
 	
 	def __init__(self, servers={"node": [("localhost", 9091)],
@@ -17,6 +19,8 @@ class Menzies:
 		self.servers = {"node":[]}
 		for s,p in servers["node"]:
 			def makeNodeClient():
+				print "makeNodeClient(",s,p,")"
+				sys.stdout.flush()
 				transport = TSocket.TSocket(s,p)
 				transport = TTransport.TBufferedTransport(transport)
 				protocol = TBinaryProtocol.TBinaryProtocol(transport)
@@ -28,7 +32,7 @@ class Menzies:
 		self.node_partitioner = StaticLatPartitioner(self.servers["node"])
 
 		def makeWayClient():
-			transport = TSocket.TSocket(server["way"][0],server["way"][1])
+			transport = TSocket.TSocket(servers["way"][0],servers["way"][1])
 			transport = TTransport.TBufferedTransport(transport)
 			protocol = TBinaryProtocol.TBinaryProtocol(transport)
 			client = WayServer.Client(protocol)
@@ -37,7 +41,7 @@ class Menzies:
 		self.servers["way"] = makeWayClient
 
 		def makeRelationClient():
-			transport = TSocket.TSocket(server["relation"][0],server["relation"][1])
+			transport = TSocket.TSocket(servers["relation"][0],servers["relation"][1])
 			transport = TTransport.TBufferedTransport(transport)
 			protocol = TBinaryProtocol.TBinaryProtocol(transport)
 			client = RelationServer.Client(protocol)
@@ -46,6 +50,7 @@ class Menzies:
 		self.servers["relation"] = makeRelationClient
 
 		self.next_node_id = 0
+		self.next_changeset_id = 0
 
 	def getAllInBounds(self, box):
 		osm = Osm()
@@ -291,4 +296,9 @@ class Menzies:
 
 	def createRelation(self, relation):
 		return self.servers["relation"]().createRelation(relation)
+	
+	def createChangeset(self, changeset):
+		i = self.next_changeset_id
+		self.next_changeset_id += 1
+		return i
 
