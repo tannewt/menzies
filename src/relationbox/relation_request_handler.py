@@ -154,10 +154,11 @@ class RelationRequestHandler:
 		return relations
 
 	def createRelation(self, relation):
-		increment_lock.acquire()
-		next_id = long(db.get("next_id"))
-		db.put("next_id", "%d"%(next_id+1))
-		increment_lock.release()	
+		self.increment_lock.acquire()
+		next_id = long(self.db.get("next_id"))
+		self.db.delete("next_id")
+		self.db.put("next_id", "%d"%(next_id+1))
+		self.increment_lock.release()	
 
 		relation.id = next_id
 		relation.version = 1

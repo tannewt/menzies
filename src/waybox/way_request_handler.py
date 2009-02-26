@@ -124,10 +124,11 @@ class WayRequestHandler:
 		return ways
 
 	def createWay(self, way):
-		increment_lock.acquire()
-		next_id = long(db.get("next_id"))
-		db.put("next_id", "%d"%(next_id+1))
-		increment_lock.release()	
+		self.increment_lock.acquire()
+		next_id = long(self.db.get("next_id"))
+		self.db.delete("next_id")
+		self.db.put("next_id", "%d"%(next_id+1))
+		self.increment_lock.release()	
 
 		way.id = next_id
 		way.version = 1
