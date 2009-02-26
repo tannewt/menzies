@@ -42,6 +42,11 @@ class RelationRequestHandler:
 
 		#self.debug_print_db()
 
+	def cleanup(self):
+		self.db.close()
+		self.reverse_relation_index.close()
+		self.reverse_way_index.close()
+
 	def debug_print_db(self):
 		relation = Relation()
 

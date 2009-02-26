@@ -9,7 +9,9 @@ from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
-import sys
+import threading
+import sys, os
+from bsddb import db as bdb
 
 class Menzies:
 	
@@ -31,6 +33,14 @@ class Menzies:
 		
 		self.node_partitioner = StaticLatPartitioner(self.servers["node"])
 
+		self.db = bdb.DB()
+		#self.db.set_flags(bdb.DB_DUP)
+		self.db.open(os.path.join("","frontend.db"),"Frontend Data", bdb.DB_BTREE, bdb.DB_CREATE)
+		if not self.db.get("next_node_id"):
+			print "Initializing next_node_id to 0"
+			self.db.put("next_node_id", "0")
+		self.increment_lock = threading.Lock()
+
 		def makeWayClient():
 			transport = TSocket.TSocket(servers["way"][0],servers["way"][1])
 			transport = TTransport.TBufferedTransport(transport)
@@ -49,8 +59,10 @@ class Menzies:
 			return client
 		self.servers["relation"] = makeRelationClient
 
-		self.next_node_id = 0
 		self.next_changeset_id = 0
+
+	def cleanup(self):
+		self.db.close()
 
 	def getAllInBounds(self, box):
 		osm = Osm()
@@ -61,11 +73,15 @@ class Menzies:
 
 		relation_set = set()
 		way_set = set()
+		node_set = set()
 
 		try:
 			for server in self.node_partitioner.from_box(box):
 				for node in server().getNodesInBounds(box):
+
+					node_set.add(node.id)
 					osm.nodes.append(node)
+
 					for way in self.servers["way"]().getWaysFromNode(node.id):
 						if way.id not in way_set:
 							osm.ways.append(way)
@@ -84,6 +100,13 @@ class Menzies:
 							if relation_in_relation.id not in relation_set:
 								osm.relations.append(relation_in_relation)
 								relation_set.add(relation_in_relation.id)
+
+					for way in osm.ways:
+						for node_id in way.nodes:
+							if node_id not in node_set:
+								# TODO fetch from the right node server
+								node_set.add(node_id)
+
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
 				raise e
@@ -137,8 +160,14 @@ class Menzies:
 		return None
 	
 	def createNode(self, node):
-		node.id = self.next_node_id
-		self.next_node_id+=1
+		self.increment_lock.acquire()
+		next_id = long(self.db.get("next_node_id"))
+		self.db.delete("next_node_id")
+		self.db.put("next_node_id", "%d"%(next_id+1))
+		self.increment_lock.release()
+
+		node.id = next_id
+		print "next_node_id: ", self.db.get("next_node_id")
 		
 		self.node_partitioner.from_node(node)[0]().createNode(node)
 		return node.id

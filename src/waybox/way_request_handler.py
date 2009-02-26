@@ -35,6 +35,10 @@ class WayRequestHandler:
 		#self.debug_print_db()
 		#self.debug_print_reverse_node_index()
 
+	def cleanup(self):
+		self.db.close()
+		self.reverse_node_index.close()
+
 	def debug_print_db(self):
 		way = Way()
 

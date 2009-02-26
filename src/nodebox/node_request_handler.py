@@ -25,6 +25,9 @@ class NodeRequestHandler:
 
 		#self.spatial_index = Rtree("spatial", pagesize=8) # page holds 64 bit node ids
 
+	def cleanup(self):
+		self.db.close()
+
 	def getNode(self, id):
 		node = Node()
 		data = self.db.get("%d"%id)

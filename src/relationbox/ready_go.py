@@ -27,6 +27,10 @@ server = TServer.TThreadedServer(processor, transport, tfactory, pfactory)
 #server = TServer.TForkingServer(processor, transport, tfactory, pfactory)
 
 print 'Starting the server...'
-server.serve()
+try:
+	server.serve()
+except Exception, e:
+	handler.cleanup()
+	raise e
 print 'done.'
 

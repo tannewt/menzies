@@ -3,7 +3,7 @@
 import subprocess
 import sys
 import time
-import os
+import os, signal
 
 config = {'way': {'args':[],'deps':[]},
 				'relation': {'args':[],'deps':[]},
@@ -29,9 +29,12 @@ def kill(process):
 	#print process.poll()
 	cmd = ["kill",str(process.pid)]
 	print " ".join(cmd)
+	os.kill(process.pid, signal.SIGINT)
+	'''
 	r = subprocess.call(cmd)
 	if r != 0:
 		print "NOT killed. returned",r
+	'''
 
 def run(cmd, name, data_dir=""):
 	print "starting",name

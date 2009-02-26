@@ -591,5 +591,10 @@ if __name__=="__main__":
 	servers={"node": node_servers,"way":('localhost','9090'),"relation":('localhost','9092')}
 	menzies = menzies.Menzies(servers)
 	httpd = ThreadingHTTPServer(("",8001),OpenStreetMapHandler)
-	httpd.serve_forever()
+	try:
+		httpd.serve_forever()
+	except Exception, e:
+		print "Cleaning up"
+		menzies.cleanup()
+		raise e
 
