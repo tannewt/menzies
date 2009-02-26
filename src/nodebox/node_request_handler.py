@@ -1,6 +1,6 @@
 from bsddb import db as bdb
 
-import sys
+import sys, os
 sys.path.append('../common/gen-py')
 sys.path.append('../common')
 from data.ttypes import *
@@ -15,9 +15,13 @@ except:
 
 class NodeRequestHandler:
 	def __init__(self):
+		data_dir = ""
+		if os.environ.has_key("DATA_DIR"):
+			data_dir = os.environ["DATA_DIR"]
+
 		self.db = bdb.DB()
 		self.db.set_flags(bdb.DB_DUP)
-		self.db.open("nodes.db","Nodes", bdb.DB_BTREE, bdb.DB_CREATE)
+		self.db.open(os.path.join(data_dir,"nodes.db"),"Nodes", bdb.DB_BTREE, bdb.DB_CREATE)
 
 		#self.spatial_index = Rtree("spatial", pagesize=8) # page holds 64 bit node ids
 

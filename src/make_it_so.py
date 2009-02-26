@@ -3,6 +3,7 @@
 import subprocess
 import sys
 import time
+import os
 
 config = {'way': {'args':[],'deps':[]},
 				'relation': {'args':[],'deps':[]},
@@ -32,10 +33,17 @@ def kill(process):
 	if r != 0:
 		print "NOT killed. returned",r
 
-def run(cmd, name):
+def run(cmd, name, data_dir=""):
 	print "starting",name
 	print " ".join(cmd)
-	p = subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=open(name.lower()+".log","w"),stderr=subprocess.STDOUT)
+
+	try:
+		os.mkdir(data_dir)
+	except:
+		pass
+
+	p = subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=open(name.lower()+".log","w"),stderr=subprocess.STDOUT, env={'DATA_DIR':data_dir})
+
 	print "started",p.pid
 	print
 	return p
@@ -59,13 +67,13 @@ for s in servers:
 		for i in range(config[s]["num"]):
 			name = "NodeServer%d"%i
 			cmd = ["python","nodebox/ready_go.py"]+[str(9100+i)]
-			p = run(cmd, name)
+			p = run(cmd, name, "/tmp/"+name)
 			processes.append((name, p))
 			time.sleep(1)
 	elif s=='node':
 		name = "NodeServer"
 		cmd = ["python","nodebox/ready_go.py"]+config[s]["args"]
-		p = run(cmd, name)
+		p = run(cmd, name, "/tmp/"+name)
 		processes.append((name, p))
 	elif s=='front':
 		name = "Frontend"

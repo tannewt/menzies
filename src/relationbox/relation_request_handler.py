@@ -4,7 +4,8 @@
 
 from bsddb import db as bdb
 
-import sys
+import threading
+import sys, os
 sys.path.append('../common')
 sys.path.append('../common/gen-py')
 from data.ttypes import *
@@ -13,23 +14,31 @@ import thrift_wrapper
 
 class RelationRequestHandler:
 	def __init__(self):
+		data_dir = ""
+		if os.environ.has_key("DATA_DIR"):
+			data_dir = os.environ["DATA_DIR"]
+
 		self.db = bdb.DB()
 		self.db.set_flags(bdb.DB_DUP)
-		self.db.open("relations.db","Relations", bdb.DB_BTREE, bdb.DB_CREATE)
+		self.db.open(os.path.join(data_dir,"relations.db"),"Relations", bdb.DB_BTREE, bdb.DB_CREATE)
+
+		if not self.db.get("next_id"):
+			print "Initializing next_id to 0"
+			self.db.put("next_id", "0")
 
 		self.reverse_node_index = bdb.DB()
 		self.reverse_node_index.set_flags(bdb.DB_DUP)
-		self.reverse_node_index.open("relations_reverse_node_index.db","Reverse Node Index", bdb.DB_BTREE, bdb.DB_CREATE)
+		self.reverse_node_index.open(os.path.join(data_dir,"relations_reverse_node_index.db"),"Reverse Node Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
 		self.reverse_relation_index = bdb.DB()
 		self.reverse_relation_index.set_flags(bdb.DB_DUP)
-		self.reverse_relation_index.open("relations_reverse_relation_index.db","Reverse Relation Index", bdb.DB_BTREE, bdb.DB_CREATE)
+		self.reverse_relation_index.open(os.path.join(data_dir,"relations_reverse_relation_index.db"),"Reverse Relation Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
 		self.reverse_way_index = bdb.DB()
 		self.reverse_way_index.set_flags(bdb.DB_DUP)
-		self.reverse_way_index.open("relations_reverse_way_index.db","Reverse Relation Index", bdb.DB_BTREE, bdb.DB_CREATE)
+		self.reverse_way_index.open(os.path.join(data_dir,"relations_reverse_way_index.db"),"Reverse Relation Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
-		self.next_id = 0
+		self.increment_lock = threading.Lock()
 
 		#self.debug_print_db()
 
@@ -145,9 +154,12 @@ class RelationRequestHandler:
 		return relations
 
 	def createRelation(self, relation):
-		relation.id = self.next_id
-		self.next_id += 1
+		increment_lock.acquire()
+		next_id = long(db.get("next_id"))
+		db.put("next_id", "%d"%(next_id+1))
+		increment_lock.release()	
 
+		relation.id = next_id
 		relation.version = 1
 
 		relation_id_str = "%d"%relation.id

@@ -4,7 +4,8 @@
 
 from bsddb import db as bdb
 
-import sys
+import threading
+import sys, os
 sys.path.append('../common')
 sys.path.append('../common/gen-py')
 from data.ttypes import *
@@ -13,15 +14,23 @@ import thrift_wrapper
 
 class WayRequestHandler:
 	def __init__(self):
+		data_dir = ""
+		if os.environ.has_key("DATA_DIR"):
+			data_dir = os.environ["DATA_DIR"]
+
 		self.db = bdb.DB()
 		self.db.set_flags(bdb.DB_DUP)
-		self.db.open("ways.db","Ways", bdb.DB_BTREE, bdb.DB_CREATE)
+		self.db.open(os.path.join(data_dir,"ways.db"),"Ways", bdb.DB_BTREE, bdb.DB_CREATE)
+
+		if not self.db.get("next_id"):
+			print "Initializing next_id to 0"
+			self.db.put("next_id", "0")
 
 		self.reverse_node_index = bdb.DB()
 		self.reverse_node_index.set_flags(bdb.DB_DUP)
-		self.reverse_node_index.open("ways_reverse_node_index.db","Reverse Node Index", bdb.DB_BTREE, bdb.DB_CREATE)
+		self.reverse_node_index.open(os.path.join(data_dir,"ways_reverse_node_index.db"),"Reverse Node Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
-		self.next_id = 0
+		self.increment_lock = threading.Lock()
 
 		#self.debug_print_db()
 		#self.debug_print_reverse_node_index()
@@ -115,9 +124,12 @@ class WayRequestHandler:
 		return ways
 
 	def createWay(self, way):
-		way.id = self.next_id
-		self.next_id += 1
+		increment_lock.acquire()
+		next_id = long(db.get("next_id"))
+		db.put("next_id", "%d"%(next_id+1))
+		increment_lock.release()	
 
+		way.id = next_id
 		way.version = 1
 
 		way_id_str = "%d"%way.id
