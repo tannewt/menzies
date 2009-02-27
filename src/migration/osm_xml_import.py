@@ -8,6 +8,8 @@ sys.path.append('../common')
 sys.path.append('../common/gen-py')
 from data.ttypes import *
 
+raw_spatial_data = open("spatial_data.raw", "w")
+
 sys.path.append('../nodebox')
 from node_request_handler import NodeRequestHandler
 node_handler = NodeRequestHandler()
@@ -19,9 +21,6 @@ way_handler = WayRequestHandler()
 sys.path.append('../relationbox')
 from relation_request_handler import RelationRequestHandler
 relation_handler = RelationRequestHandler()
-
-#import rtree
-#index = rtree.Rtree("spatial", pagesize=8)
 
 class FancyCounter(handler.ContentHandler):
 
@@ -47,8 +46,6 @@ class FancyCounter(handler.ContentHandler):
 			self._object.id = int(attrs["id"])
 			self._object.lat = float(attrs["lat"])
 			self._object.lon = float(attrs["lon"])
-
-			#index.add(self._object.id, (self._object.lat, self._object.lon))
 
 			if attrs.has_key("changeset"): self._object.changeset = int(attrs["changeset"])
 			if attrs.has_key("visible"): self._object.visible = attrs["visible"] == "true"
@@ -100,7 +97,8 @@ class FancyCounter(handler.ContentHandler):
 	def endElement(self, name):
 		# Store in Berkeley DB
 		if name == "node":
-			node_handler.createNode(self._object)
+			node_id = node_handler.createNode(self._object)
+			raw_spatial_data.write("%f:%f:%d\n"%(self._object.lat, self._object.lon, node_id))
 		elif name == "way":
 			way_handler.createWay(self._object)
 		elif name == "relation":
@@ -125,4 +123,7 @@ class FancyCounter(handler.ContentHandler):
 parser = make_parser()
 parser.setContentHandler(FancyCounter())
 parser.parse(sys.argv[1])
+
+raw_spatial_data.close()
+
 

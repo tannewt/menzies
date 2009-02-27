@@ -5,6 +5,8 @@ import sys
 import time
 import os, signal
 
+from bsddb import db as bdb
+
 config = {'way': {'args':[],'deps':[]},
 				'relation': {'args':[],'deps':[]},
 				'node': {'args':[],'deps':[]},
@@ -29,6 +31,9 @@ def kill(process):
 	#print process.poll()
 	cmd = ["kill",str(process.pid)]
 	print " ".join(cmd)
+
+	# Python translates SIGINT to KeyboardInterrupt, 
+	# which allows the process to do any cleanup
 	os.kill(process.pid, signal.SIGINT)
 	'''
 	r = subprocess.call(cmd)
