@@ -32,7 +32,8 @@ def load(level):
 	print "writing file to do external sort on"
 	for x in range(grid_size):
 		for y in range(grid_size):
-			data = db.get("%d-%d-%d" % (level - 1, x, y))
+			key = "%d-%d-%d" % (level - 1, x, y)
+			data = db.get(key)
 			if data:
 				min_lat, min_lon, max_lat, max_lon = data.split(":")[:4]
 
@@ -45,7 +46,7 @@ def load(level):
 				mid_lon = (min_lon + max_lon) / 2
 
 				total_entries += 1
-				level2_file.write("%f:%f:%f:%f:%f:%f\n" % (mid_lat, mid_lon, min_lat, min_lon, max_lat, max_lon))
+				level2_file.write("%f:%f:%f:%f:%f:%f:%s\n" % (mid_lat, mid_lon, min_lat, min_lon, max_lat, max_lon, key))
 	level2_file.close()
 
 	sorted_by_lon_filename = input_basename + "_sorted_by_lon"
@@ -78,9 +79,12 @@ def load(level):
 		i = 0
 		data = []
 		for line in open(fullname,"r").xreadlines():
-			mid_lat, mid_lon, min_lat, min_lon, max_lat, max_lon = [float(x) for x in line.split(":")]
-			data.append((min_lat, min_lon, None))
+			mid_lat, mid_lon, min_lat, min_lon, max_lat, max_lon = [float(x) for x in line.split(":")[:6]]
+			child_key = line.split(":")[-1].strip()
+
+			data.append((min_lat, min_lon, child_key))
 			data.append((max_lat, max_lon, None))
+
 			i += 1
 			if i % entries_per_page == 0:
 				rectangle = minimum_bounding_rectangle(data)

@@ -38,8 +38,10 @@ for i in range(levels):
 				max_lon = float(max_lon)
 
 				node_ids = pickle.loads(pickled_ids)
-				total_nodes += len(node_ids)
-				#print "(%f, %f, %f, %f) ids: %s" % (min_lat, min_lon, max_lat, max_lon, node_ids)
+				if i == 0:
+					total_nodes += len(node_ids)
+				if splits < 10:
+					print "(%f, %f, %f, %f) ids: %s" % (min_lat, min_lon, max_lat, max_lon, node_ids)
 
 #########################################?
 
