@@ -4,6 +4,10 @@ sys.path.append(os.getcwd())
 
 from bsddb import db as bdb
 
+if len(sys.argv)==1:
+	print sys.argv[0],"<db file>"
+	sys.exit(1)
+
 db = bdb.DB()
 db.open(sys.argv[1],"Spatial Index", bdb.DB_BTREE, 0)
 
