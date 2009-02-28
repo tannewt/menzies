@@ -13,6 +13,21 @@ import threading
 import sys, os
 from bsddb import db as bdb
 
+class curry:
+    def __init__(self, fun, *args, **kwargs):
+        self.fun = fun
+        self.pending = args[:]
+        self.kwargs = kwargs.copy()
+
+    def __call__(self, *args, **kwargs):
+        if kwargs and self.kwargs:
+            kw = self.kwargs.copy()
+            kw.update(kwargs)
+        else:
+            kw = kwargs or self.kwargs
+
+        return self.fun(*(self.pending + args), **kw)
+
 class Menzies:
 	
 	def __init__(self, servers={"node": [("localhost", 9091)],
@@ -20,16 +35,16 @@ class Menzies:
 															"relation":('localhost','9092')}):
 		self.servers = {"node":[]}
 		for s,p in servers["node"]:
-			def makeNodeClient():
-				print "makeNodeClient(",s,p,")"
+			def makeNodeClient(server, port):
+				print "makeNodeClient(",server,port,")"
 				sys.stdout.flush()
-				transport = TSocket.TSocket(s,p)
+				transport = TSocket.TSocket(server,port)
 				transport = TTransport.TBufferedTransport(transport)
 				protocol = TBinaryProtocol.TBinaryProtocol(transport)
 				client = NodeServer.Client(protocol)
 				transport.open()
 				return client
-			self.servers["node"].append(makeNodeClient)
+			self.servers["node"].append(curry(makeNodeClient,s,p))
 		
 		self.node_partitioner = StaticLatPartitioner(self.servers["node"])
 
