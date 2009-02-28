@@ -5,13 +5,8 @@ sys.path.append('../common/gen-py')
 sys.path.append('../common')
 from data.ttypes import *
 
+from berkeley_db_rtree import RTree
 import thrift_wrapper
-
-try:
-	from rtree import Rtree
-except:
-	Rtree = None
-
 
 class NodeRequestHandler:
 	def __init__(self):
@@ -23,7 +18,7 @@ class NodeRequestHandler:
 		self.db.set_flags(bdb.DB_DUP)
 		self.db.open(os.path.join(data_dir,"nodes.db"),"Nodes", bdb.DB_BTREE, bdb.DB_CREATE)
 
-		#self.spatial_index = Rtree("spatial", pagesize=8) # page holds 64 bit node ids
+		self.spatial_index = RTree(os.path.join(data_dir,"spatial_index.db"))
 
 	def cleanup(self):
 		self.db.close()
@@ -145,10 +140,10 @@ class NodeRequestHandler:
 			cursor.close()
 
 	def getNodesInBounds(self, bounds):
-		if False:
-			node_ids = self.spatial_index.intersection((bounds.min_lat, bounds.min_lon, bounds.max_lat, bounds.max_lon))
+		if self.spatial_index:
+			node_ids = self.spatial_index.likely_intersection(bounds)
 			return self.getNodes(node_ids)
-		else:		
+		else:
 			def contains(bounds, node):
 				return (node.lat > bounds.min_lat and node.lat < bounds.max_lat) and (node.lon > bounds.min_lon and node.lon < bounds.max_lon)
 
