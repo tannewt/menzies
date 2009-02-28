@@ -119,8 +119,12 @@ class Menzies:
 					for way in osm.ways:
 						for node_id in way.nodes:
 							if node_id not in node_set:
-								# TODO fetch from the right node server
-								node_set.add(node_id)
+								for server in self.node_partitioner.from_node_id(node_id):
+									node = server().getNode(node_id)
+									if node:
+										osm.nodes.append(node)
+										node_set.add(node_id)
+										break
 
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
