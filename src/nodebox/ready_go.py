@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys
+import sys, os
 sys.path.append('common/gen-py')
 sys.path.append('common/')
 
@@ -12,6 +12,9 @@ from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
 
 from node_request_handler import NodeRequestHandler
+
+# Don't buffer stdout
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
 if len(sys.argv) > 1:
 	port = int(sys.argv[1])

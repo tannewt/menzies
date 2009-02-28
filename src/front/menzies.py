@@ -2,6 +2,7 @@ from node import NodeServer
 from way import WayServer
 from relation import RelationServer
 from partitioner import *
+from future import Future
 
 from data.ttypes import *
 
@@ -33,19 +34,48 @@ class Menzies:
 	def __init__(self, servers={"node": [("localhost", 9091)],
 															"way":('localhost','9090'),
 															"relation":('localhost','9092')}):
+		self.node_clients = {}
+		self.way_client = None
+		self.relation_client = None
+
 		self.servers = {"node":[]}
 		for s,p in servers["node"]:
 			def makeNodeClient(server, port):
-				print "makeNodeClient(",server,port,")"
-				sys.stdout.flush()
-				transport = TSocket.TSocket(server,port)
+				if not self.node_clients.has_key((server,port)) or not self.node_clients[(server,port)][0].isOpen():
+					print "makeNodeClient(",server,port,")"
+					sys.stdout.flush()
+
+					transport = TSocket.TSocket(server,port)
+					transport = TTransport.TBufferedTransport(transport)
+					protocol = TBinaryProtocol.TBinaryProtocol(transport)
+					client = NodeServer.Client(protocol)
+					transport.open()
+					self.node_clients[(server,port)] = (transport, client)
+				return self.node_clients[(server,port)][1]
+			self.servers["node"].append(curry(makeNodeClient,s,p))
+
+		def makeWayClient():
+			if not self.way_client or not self.way_client[0].isOpen():
+				transport = TSocket.TSocket(servers["way"][0],servers["way"][1])
 				transport = TTransport.TBufferedTransport(transport)
 				protocol = TBinaryProtocol.TBinaryProtocol(transport)
-				client = NodeServer.Client(protocol)
+				client = WayServer.Client(protocol)
 				transport.open()
-				return client
-			self.servers["node"].append(curry(makeNodeClient,s,p))
-		
+				self.way_client = (transport, client)
+			return self.way_client[1]
+		self.servers["way"] = makeWayClient
+
+		def makeRelationClient():
+			if not self.relation_client or not self.relation_client[0].isOpen():
+				transport = TSocket.TSocket(servers["relation"][0],servers["relation"][1])
+				transport = TTransport.TBufferedTransport(transport)
+				protocol = TBinaryProtocol.TBinaryProtocol(transport)
+				client = RelationServer.Client(protocol)
+				transport.open()
+				self.relation_client = (transport, client)
+			return self.relation_client[1]
+		self.servers["relation"] = makeRelationClient
+
 		self.node_partitioner = StaticLatPartitioner(self.servers["node"])
 
 		self.db = bdb.DB()
@@ -55,24 +85,6 @@ class Menzies:
 			print "Initializing next_node_id to 0"
 			self.db.put("next_node_id", "0")
 		self.increment_lock = threading.Lock()
-
-		def makeWayClient():
-			transport = TSocket.TSocket(servers["way"][0],servers["way"][1])
-			transport = TTransport.TBufferedTransport(transport)
-			protocol = TBinaryProtocol.TBinaryProtocol(transport)
-			client = WayServer.Client(protocol)
-			transport.open()
-			return client
-		self.servers["way"] = makeWayClient
-
-		def makeRelationClient():
-			transport = TSocket.TSocket(servers["relation"][0],servers["relation"][1])
-			transport = TTransport.TBufferedTransport(transport)
-			protocol = TBinaryProtocol.TBinaryProtocol(transport)
-			client = RelationServer.Client(protocol)
-			transport.open()
-			return client
-		self.servers["relation"] = makeRelationClient
 
 		self.next_changeset_id = 0
 
@@ -116,6 +128,7 @@ class Menzies:
 								osm.relations.append(relation_in_relation)
 								relation_set.add(relation_in_relation.id)
 
+					# Fetch nodes outside the bounding box that are part of ways within the bounding box
 					for way in osm.ways:
 						for node_id in way.nodes:
 							if node_id not in node_set:

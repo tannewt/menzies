@@ -533,11 +533,17 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		elif bits[0]=="map":
 			args = args["bbox"]
 			box = data.BBox(min_lat=float(args[1]),max_lat=float(args[3]),min_lon=float(args[0]),max_lon=float(args[2]))
+
+			if box.max_lat - box.min_lat > 0.25 or box.max_lon - box.min_lon > 0.25:
+				self.send_response(405) # FIXME: What's the right response?
+				self.end_headers()
+				return
+
 			osm = menzies.getAllInBounds(box)
 			if osm:
 				doc = impl.createDocument(None, "osm", None)
 				root = doc.documentElement
-				print osm
+				print str(osm)[:100], "..."
 				for relation in osm.relations:
 					root.appendChild(self.relation_to_xml(doc, relation))
 				for way in osm.ways:
@@ -583,6 +589,9 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write(str(version))
 
 if __name__=="__main__":
+	# Don't buffer stdout
+	# sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+
 	if len(sys.argv) > 1:
 		num_nodeservers = int(sys.argv[1])
 	else:
