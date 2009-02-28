@@ -12,15 +12,15 @@ from data.ttypes import *
 
 raw_spatial_data = open("spatial_data.raw", "w")
 
-sys.path.append('../nodebox')
+sys.path.append('nodebox')
 from node_request_handler import NodeRequestHandler
 node_handler = NodeRequestHandler()
 
-sys.path.append('../waybox')
+sys.path.append('waybox')
 from way_request_handler import WayRequestHandler
 way_handler = WayRequestHandler()
 
-sys.path.append('../relationbox')
+sys.path.append('relationbox')
 from relation_request_handler import RelationRequestHandler
 relation_handler = RelationRequestHandler()
 
