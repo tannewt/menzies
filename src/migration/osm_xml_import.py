@@ -2,10 +2,12 @@
 
 import sys, time
 
+import bz2
+
 from xml.sax import make_parser, handler
 
-sys.path.append('../common')
-sys.path.append('../common/gen-py')
+sys.path.append('common')
+sys.path.append('common/gen-py')
 from data.ttypes import *
 
 raw_spatial_data = open("spatial_data.raw", "w")
@@ -122,7 +124,11 @@ class FancyCounter(handler.ContentHandler):
 
 parser = make_parser()
 parser.setContentHandler(FancyCounter())
-parser.parse(sys.argv[1])
+
+if sys.argv[1][-4:]==".bz2":
+	parser.parse(bz2.BZ2File(sys.argv[1]))
+else:
+	parser.parse(sys.argv[1])
 
 raw_spatial_data.close()
 
