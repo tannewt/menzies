@@ -73,3 +73,10 @@ for f in os.listdir(curr_dir):
 
 db.close()
 
+# Cleanup
+os.unlink(sorted_by_lon_filename)
+for f in os.listdir(curr_dir):
+	fullname = os.path.join(curr_dir,f)
+	os.unlink(fullname)
+os.rmdir(curr_dir)
+

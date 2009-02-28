@@ -103,6 +103,14 @@ def load(level):
 	db.put("levels", str(level))
 	db.put("splits%d" % level, str(int(grid_size)))
 
+	# Cleanup
+	os.unlink(input_filename)
+	os.unlink(sorted_by_lon_filename)
+	for f in os.listdir(curr_dir):
+		fullname = os.path.join(curr_dir,f)
+		os.unlink(fullname)
+	os.rmdir(curr_dir)
+
 	if grid_size > 1:
 		load(level+1)
 
