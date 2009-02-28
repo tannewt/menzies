@@ -140,13 +140,15 @@ class NodeRequestHandler:
 			cursor.close()
 
 	def getNodesInBounds(self, bounds):
+		def contains(bounds, node):
+			return (node.lat > bounds.min_lat and node.lat < bounds.max_lat) and (node.lon > bounds.min_lon and node.lon < bounds.max_lon)
+
 		if self.spatial_index:
 			node_ids = self.spatial_index.likely_intersection(bounds)
-			return self.getNodes(node_ids)
-		else:
-			def contains(bounds, node):
-				return (node.lat > bounds.min_lat and node.lat < bounds.max_lat) and (node.lon > bounds.min_lon and node.lon < bounds.max_lon)
 
+			# We'll get some nodes that are outside the requested bounds, so filter them out
+			return [node for node in self.getNodes(node_ids) if contains(bounds,node)]
+		else:
 			# Do the stupid search
 			nodes = []
 			cursor = self.db.cursor()
