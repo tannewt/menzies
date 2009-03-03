@@ -103,7 +103,7 @@ class FancyCounter(handler.ContentHandler):
 			if self._object == None: return
 
 			member = Member()
-			if attrs.has_key("role"): member.role = attrs["role"]
+			if attrs.has_key("role"): member.role = attrs["role"].encode("utf-8")
 			if attrs["type"] == "way":
 				member.way = int(attrs["ref"])
 			elif attrs["type"] == "relation":
