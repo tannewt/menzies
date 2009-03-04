@@ -607,6 +607,7 @@ if __name__=="__main__":
 				section = line
 			elif section:
 				info = line.split(":")
+				info[1] = int(info[1])
 				if section == "[Nodes]":
 					servers["node"].append(info)
 				elif section == "[Way]":
