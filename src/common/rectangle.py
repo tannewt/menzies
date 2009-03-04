@@ -13,18 +13,8 @@ class Rectangle:
 		if not self.min_lat:
 			self.min_lat = lat
 			self.min_lon = lon
-		elif not self.max_lat:
-			if lat < self.min_lat:
-				self.max_lat = self.min_lat
-				self.min_lat = lat
-			else:
-				self.max_lat = lat
-
-			if lon < self.min_lon:
-				self.max_lon = self.min_lon
-				self.min_lon = lon
-			else:
-				self.max_lon = lon
+			self.max_lat = lat
+			self.max_lon = lon
 		else:
 			if lat < self.min_lat:
 				self.min_lat = lat
@@ -38,6 +28,11 @@ class Rectangle:
 
 		if node_id:
 			self.node_ids.append(node_id)
+
+	def area(self):
+		height = self.max_lat - self.min_lat
+		width = self.max_lon - self.min_lon
+		return height * width
 
 	def __str__(self):
 		return "%f:%f:%f:%f:%s" % (self.min_lat, self.min_lon, self.max_lat, self.max_lon, pickle.dumps(self.node_ids))
