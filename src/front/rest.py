@@ -40,6 +40,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 				         (self.address_string(),
 				          self.log_date_time_string(),
 				          format%args))
+		log.flush()
 
 
 	def parse_node_xml(self, e):
@@ -141,7 +142,8 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	def way_to_xml(self, doc, o):
 		way = doc.createElement("way")
 		way.setAttribute("id",str(o.id))
-		way.setAttribute("user",o.user)
+		if o.user:
+			way.setAttribute("user",o.user)
 		if o.visible:
 			way.setAttribute("visible","true")
 		else:
@@ -574,12 +576,17 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 				for node in osm.nodes:
 					root.appendChild(self.node_to_xml(doc, node))
 
-				xml_str = doc.toxml()
-				self.send_response(200)
-				self.send_header("Content-type", "text/xml")
-				self.send_header("Content-length", str(len(xml_str)))
-				self.end_headers()
-				self.wfile.write(xml_str)
+				try:
+					xml_str = doc.toxml()
+				except:
+					print "Failed to convert document to XML"
+					print str(osm)
+				else:
+					self.send_response(200)
+					self.send_header("Content-type", "text/xml")
+					self.send_header("Content-length", str(len(xml_str)))
+					self.end_headers()
+					self.wfile.write(xml_str)
 			else:
 				self.send_response(410)
 				self.end_headers()
