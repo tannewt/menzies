@@ -57,9 +57,10 @@ window.add(hbox2)
 
 rect = goocanvas.Rect(parent=root, x=0, y=0, width=360, height=180, stroke_color_rgba=0x000000ff, line_width=1, line_dash=goocanvas.LineDash([1.0, 1.0]))
 
-num_layers = int(db.get("levels"))+1
+lowest = 0
+num_layers = int(db.get("levels"))+1-lowest
 
-level.set_range(0,num_layers-1)
+level.set_range(lowest,num_layers-1)
 current_layer = num_layers-1
 level.set_value(num_layers-1)
 level.set_inverted(True)
@@ -104,7 +105,7 @@ root.connect("button-release-event",up)
 root.connect("motion-notify-event",move)
 
 layers = {}
-for layer in range(num_layers):
+for layer in range(lowest,num_layers+lowest):
 	splits = int(db.get("splits%d" % layer))
 	layers[layer] = []
 	for x in range(splits):
@@ -137,6 +138,8 @@ def output(button):
 	img.write_to_png("output.png")
 
 def change_level(scale, scroll, value):
+	if value < lowest: return
+
 	global current_layer
 	value = int(value)
 	scale.set_value(value)

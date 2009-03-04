@@ -2,6 +2,7 @@
 
 from bsddb import db as bdb
 
+import sys
 import pprint
 import pickle
 
@@ -15,7 +16,7 @@ import pickle
 # 47.661041, -122.306768 (min_lat, min_lon)
 
 db = bdb.DB()
-db.open("spatial_index_tmp.db","Spatial Index", bdb.DB_BTREE, 0)
+db.open(sys.argv[1],"Spatial Index", bdb.DB_BTREE, 0)
 
 print "spatial_index_tmp.db:"
 #stat = db.stat()
