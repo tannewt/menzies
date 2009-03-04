@@ -41,7 +41,7 @@ class Menzies:
 		self.servers = {"node":[]}
 		for s,p in servers["node"]:
 			def makeNodeClient(server, port):
-				if not self.node_clients.has_key((server,port)) or not self.node_clients[(server,port)][0].isOpen():
+				if True or not self.node_clients.has_key((server,port)) or not self.node_clients[(server,port)][0].isOpen():
 					print "makeNodeClient(",server,port,")"
 					sys.stdout.flush()
 
@@ -55,7 +55,7 @@ class Menzies:
 			self.servers["node"].append(curry(makeNodeClient,s,p))
 
 		def makeWayClient():
-			if not self.way_client or not self.way_client[0].isOpen():
+			if True or not self.way_client or not self.way_client[0].isOpen():
 				transport = TSocket.TSocket(servers["way"][0],servers["way"][1])
 				transport = TTransport.TBufferedTransport(transport)
 				protocol = TBinaryProtocol.TBinaryProtocol(transport)
@@ -66,7 +66,7 @@ class Menzies:
 		self.servers["way"] = makeWayClient
 
 		def makeRelationClient():
-			if not self.relation_client or not self.relation_client[0].isOpen():
+			if True or not self.relation_client or not self.relation_client[0].isOpen():
 				transport = TSocket.TSocket(servers["relation"][0],servers["relation"][1])
 				transport = TTransport.TBufferedTransport(transport)
 				protocol = TBinaryProtocol.TBinaryProtocol(transport)

@@ -57,7 +57,7 @@ window.add(hbox2)
 
 rect = goocanvas.Rect(parent=root, x=0, y=0, width=360, height=180, stroke_color_rgba=0x000000ff, line_width=1, line_dash=goocanvas.LineDash([1.0, 1.0]))
 
-lowest = 0
+lowest = 1
 num_layers = int(db.get("levels"))+1-lowest
 
 level.set_range(lowest,num_layers-1)

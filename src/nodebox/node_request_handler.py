@@ -31,7 +31,7 @@ class NodeRequestHandler:
 			thrift_wrapper.from_string(node, data)
 			return node
 		else:
-			print "No node found"
+			print "No node found, %d" % id
 			return None
 
 	def getNodes(self, ids):

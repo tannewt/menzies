@@ -36,6 +36,8 @@ splits_prefix = input_basename+"_split_"
 print "splitting into chunks of %d points per chunk" % entries_per_split
 subprocess.call(["split", sorted_by_lon_filename, "-d", "-a", "5", "-l", str(entries_per_split), os.path.join(curr_dir,splits_prefix)])
 
+os.unlink(sorted_by_lon_filename)
+
 db = bdb.DB()
 db.open("spatial_index_tmp.db","Spatial Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
@@ -69,14 +71,9 @@ for f in os.listdir(curr_dir):
 		key = "%d-%d-%d" % (level, i / entries_per_page, col)
 		db.put(key, str(rectangle))
 
-	col += 1
-
-db.close()
-
-# Cleanup
-os.unlink(sorted_by_lon_filename)
-for f in os.listdir(curr_dir):
-	fullname = os.path.join(curr_dir,f)
 	os.unlink(fullname)
+
+	col += 1
+db.close()
 os.rmdir(curr_dir)
 

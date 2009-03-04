@@ -569,6 +569,9 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 				doc = impl.createDocument(None, "osm", None)
 				root = doc.documentElement
 				print str(osm)[:100], "..."
+				print "Nodes: %d" % len(osm.nodes)
+				print "Ways: %d" % len(osm.ways)
+				print "Relations: %d" % len(osm.relations)
 				for relation in osm.relations:
 					root.appendChild(self.relation_to_xml(doc, relation))
 				for way in osm.ways:
