@@ -1,0 +1,15 @@
+#!/bin/bash
+
+tar -zcvf src.tgz src/*.conf src/common/ src/migration/*.py src/nodebox/*.py src/*.py src/relationbox/*.py src/waybox/*.py src/front/*.py
+
+echo "Copying source to gateway"
+scp src.tgz hadoop.cs:
+
+for ((i=1; i<7; i=$i+1)); do
+	echo "Copying source from gateway to box$i"
+	ssh hadoop.cs "scp src.tgz box$i:"
+
+	echo "Extracting source on box$i"
+	ssh hadoop.cs "ssh box$i 'tar -zxf src.tgz'"
+done
+

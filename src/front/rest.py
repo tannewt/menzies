@@ -593,11 +593,34 @@ if __name__=="__main__":
 	# sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
 	if len(sys.argv) > 1:
-		num_nodeservers = int(sys.argv[1])
+		server_conf = open(sys.argv[1])
+
+		servers = {}
+		servers["node"] = []
+
+		for line in server_conf.xreadlines():
+			line = line.strip()
+			if line == "":
+				continue
+
+			if line in ("[Nodes]", "[Way]", "[Relation]"):
+				section = line
+			elif section:
+				info = line.split(":")
+				if section == "[Nodes]":
+					servers["node"].append(info)
+				elif section == "[Way]":
+					servers["way"] = info
+				elif section == "[Relation]":
+					servers["relation"] = info
 	else:
 		num_nodeservers = 1
-	node_servers = map(lambda x: ("localhost", 9100+x), range(num_nodeservers))
-	servers={"node": node_servers,"way":('localhost','9090'),"relation":('localhost','9092')}
+		node_servers = map(lambda x: ("localhost", 9100+x), range(num_nodeservers))
+		servers={"node": node_servers,"way":('localhost','9090'),"relation":('localhost','9092')}
+
+	print "Read server configuration:"
+	print servers
+
 	menzies = menzies.Menzies(servers)
 	httpd = ThreadingHTTPServer(("",8001),OpenStreetMapHandler)
 	try:

@@ -9,10 +9,11 @@ from berkeley_db_rtree import RTree
 import thrift_wrapper
 
 class NodeRequestHandler:
-	def __init__(self):
-		data_dir = ""
-		if os.environ.has_key("DATA_DIR"):
-			data_dir = os.environ["DATA_DIR"]
+	def __init__(self, data_dir=None):
+		if data_dir == None:
+			data_dir = ""
+			if os.environ.has_key("DATA_DIR"):
+				data_dir = os.environ["DATA_DIR"]
 
 		self.db = bdb.DB()
 		self.db.set_flags(bdb.DB_DUP)
