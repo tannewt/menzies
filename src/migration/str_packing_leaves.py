@@ -48,8 +48,11 @@ db.put("levels", "0")
 print "creating rectangles from splits and storing in spatial_index_tmp.db"
 
 col = 0
-for f in os.listdir(curr_dir):
-	fullname = os.path.join(curr_dir,f)
+
+files = [os.path.join(curr_dir,f) for f in os.listdir(curr_dir)]
+files.sort()
+
+for fullname in files:
 	# Sort by latitude
 	subprocess.call(["sort", "-k1", "-t:", "-n", fullname, "-o", fullname])
 	i = 0
