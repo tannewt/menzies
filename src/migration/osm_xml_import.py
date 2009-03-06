@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sys, time
 
@@ -30,6 +31,8 @@ way_handler = WayRequestHandler()
 sys.path.append('relationbox')
 from relation_request_handler import RelationRequestHandler
 relation_handler = RelationRequestHandler()
+
+max_node_id = -1
 
 class FancyCounter(handler.ContentHandler):
 
@@ -126,6 +129,11 @@ class FancyCounter(handler.ContentHandler):
 
 			if node_partitioner.from_node(self._object)[0] == THIS_SERVER:
 				node_id = node_handler.createNode(self._object)
+
+				global max_node_id
+				if node_id > max_node_id:
+					max_node_id = node_id
+
 				raw_spatial_data.write("%f:%f:%d\n"%(self._object.lat, self._object.lon, node_id))
 		elif name == "way":
 			if self._object == None: return
@@ -158,4 +166,5 @@ else:
 
 raw_spatial_data.close()
 
-
+if THIS_SERVER >= 0:
+  open("max_node_id", "w").write("%d\n"%str(max_node_id))
