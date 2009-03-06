@@ -102,46 +102,88 @@ class Menzies:
 		way_set = set()
 		node_set = set()
 
-		try:
-			for server in self.node_partitioner.from_box(box):
-				for node in server().getNodesInBounds(box):
-
-					node_set.add(node.id)
-					osm.nodes.append(node)
-
-					for way in self.servers["way"]().getWaysFromNode(node.id):
-						if way.id not in way_set:
-							osm.ways.append(way)
-							way_set.add(way.id)
-
-						for relation in self.servers["relation"]().getRelationsFromWay(way.id):
-							if relation.id not in relation_set:
-								osm.relations.append(relation)
-								relation_set.add(relation.id)
-					for relation in self.servers["relation"]().getRelationsFromNode(node.id):
+		for server in self.node_partitioner.from_box(box):
+			# get all nodes in the box
+			try:
+				nodes = server().getNodesInBounds(box)
+			except TApplicationException, e:
+				if e.type != TApplicationException.MISSING_RESULT:
+					raise e
+				nodes = []
+			
+			# for each of those nodes
+			for node in nodes:
+				node_set.add(node.id)
+				osm.nodes.append(node)
+				
+				#get all the ways this node is in
+				try:
+					ways = self.servers["way"]().getWaysFromNode(node.id)
+				except TApplicationException, e:
+					if e.type != TApplicationException.MISSING_RESULT:
+						raise e
+					ways = []
+				
+				# for each of these ways
+				for way in ways:
+					if way.id not in way_set:
+						osm.ways.append(way)
+						way_set.add(way.id)
+				
+					# get all relations this way is in
+					try:
+						relations = self.servers["relation"]().getRelationsFromWay(way.id)
+					except TApplicationException, e:
+						if e.type != TApplicationException.MISSING_RESULT:
+							raise e
+						relations = []
+					
+					for relation in relations:
 						if relation.id not in relation_set:
 							osm.relations.append(relation)
 							relation_set.add(relation.id)
+				
+				# get all relations this node is in
+				try:
+					relations = self.servers["relation"]().getRelationsFromNode(node.id)
+				except TApplicationException, e:
+					if e.type != TApplicationException.MISSING_RESULT:
+						raise e
+					relations = []
+				
+				for relation in relations:
+					if relation.id not in relation_set:
+						osm.relations.append(relation)
+						relation_set.add(relation.id)
 
-						for relation_in_relation in self.servers["relation"]().getRelationsFromRelation(relation.id):
-							if relation_in_relation.id not in relation_set:
-								osm.relations.append(relation_in_relation)
-								relation_set.add(relation_in_relation.id)
+					# get all relations this relation is in
+					try:
+						relations2 = self.servers["relation"]().getRelationsFromRelation(relation.id)
+					except TApplicationException, e:
+						if e.type != TApplicationException.MISSING_RESULT:
+							raise e
+						relations2 = []
+					
+					for relation_in_relation in relations2:
+						if relation_in_relation.id not in relation_set:
+							osm.relations.append(relation_in_relation)
+							relation_set.add(relation_in_relation.id)
 
-					# Fetch nodes outside the bounding box that are part of ways within the bounding box
-					for way in osm.ways:
-						for node_id in way.nodes:
-							if node_id not in node_set:
-								for server in self.node_partitioner.from_node_id(node_id):
+				# Fetch nodes outside the bounding box that are part of ways within the bounding box
+				for way in osm.ways:
+					for node_id in way.nodes:
+						if node_id not in node_set:
+							for server in self.node_partitioner.from_node_id(node_id):
+								try:
 									node = server().getNode(node_id)
-									if node:
-										osm.nodes.append(node)
-										node_set.add(node_id)
-										break
-
-		except TApplicationException, e:
-			if e.type != TApplicationException.MISSING_RESULT:
-				raise e
+								except TApplicationException, e:
+									if e.type != TApplicationException.MISSING_RESULT:
+										raise e
+									node = None
+								if node:
+									osm.nodes.append(node)
+									node_set.add(node_id)
+									break
 
 		return osm
 
