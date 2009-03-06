@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 from bsddb import db as bdb
 
@@ -7,6 +8,7 @@ import pprint
 import pickle
 import subprocess
 
+sys.path.append("common")
 from rectangle import minimum_bounding_rectangle
 
 #########################################?

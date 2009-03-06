@@ -10,6 +10,8 @@ from xml.sax import make_parser, handler
 THIS_SERVER = 2 # less than 0 for a way or relation server
 LOAD_WAYS = False
 LOAD_RELATIONS = False
+LOAD_SPATIAL = False
+LOAD_NODE_DB = False
 
 sys.path.append('common')
 sys.path.append('common/gen-py')
@@ -18,7 +20,9 @@ from data.ttypes import *
 sys.path.append('front')
 from partitioner import *
 node_partitioner = StaticLatPartitioner(range(4))
-raw_spatial_data = open("spatial_data.raw", "w")
+
+if LOAD_SPATIAL:
+	raw_spatial_data = open("spatial_data.raw", "w")
 
 sys.path.append('nodebox')
 from node_request_handler import NodeRequestHandler
@@ -127,14 +131,16 @@ class FancyCounter(handler.ContentHandler):
 		if name == "node":
 			if self._object == None: return
 
-			if node_partitioner.from_node(self._object)[0] == THIS_SERVER:
-				node_id = node_handler.createNode(self._object)
+			global max_node_id
+			if self._object.id > max_node_id:
+				max_node_id = self._object.id
 
-				global max_node_id
-				if node_id > max_node_id:
-					max_node_id = node_id
+			if LOAD_NODE_DB:
+				if node_partitioner.from_node(self._object)[0] == THIS_SERVER:
+					node_id = node_handler.createNode(self._object)
 
-				raw_spatial_data.write("%f:%f:%d\n"%(self._object.lat, self._object.lon, node_id))
+					if LOAD_SPATIAL:
+						raw_spatial_data.write("%f:%f:%d\n"%(self._object.lat, self._object.lon, node_id))
 		elif name == "way":
 			if self._object == None: return
 			way_handler.createWay(self._object)

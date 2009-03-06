@@ -1,10 +1,12 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sys, os, math
 import subprocess
 import pickle
 from bsddb import db as bdb
 
+sys.path.append("common")
 from rectangle import minimum_bounding_rectangle
 
 input_filename = "spatial_data.raw"
