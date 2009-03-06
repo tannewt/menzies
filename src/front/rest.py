@@ -1,7 +1,8 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import BaseHTTPServer, SocketServer
-import sys
+import sys, os
 import base64
 
 sys.path.append("common/gen-py/")
@@ -10,6 +11,8 @@ import menzies
 
 from xml.dom.minidom import parseString,getDOMImplementation
 from xml.dom import Node
+
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
 impl = getDOMImplementation()
 log = open("rest.log", "a")
@@ -142,8 +145,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	def way_to_xml(self, doc, o):
 		way = doc.createElement("way")
 		way.setAttribute("id",str(o.id))
-		if o.user:
-			way.setAttribute("user",o.user)
+		if o.user: way.setAttribute("user",o.user)
 		if o.visible:
 			way.setAttribute("visible","true")
 		else:
@@ -166,10 +168,9 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 
 
 	def relation_to_xml(self, doc, o):
-		print o
 		relation = doc.createElement("relation")
 		relation.setAttribute("id",str(o.id))
-		relation.setAttribute("user",o.user)
+		if o.user: relation.setAttribute("user",o.user)
 		if o.visible:
 			relation.setAttribute("visible","true")
 		else:
@@ -564,6 +565,8 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 				self.end_headers()
 				return
 
+			# A thought: make getAllInBounds a generator and build the XML as we go
+			# We can do this CPU intensive work as we go, since otherwise this box is hardly doing anything
 			osm = menzies.getAllInBounds(box)
 			if osm:
 				doc = impl.createDocument(None, "osm", None)
@@ -581,9 +584,10 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 
 				try:
 					xml_str = doc.toxml()
-				except:
-					print "Failed to convert document to XML"
+				except Exception, e:
 					print str(osm)
+					print e
+					print "Failed to convert document to XML"
 				else:
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 class NodePartitioner:
 	def __init__(self, servers):
 		"""Setup the partition over these servers."""
@@ -17,6 +18,12 @@ class NodePartitioner:
 		"""Return the servers to look for nodes in the box."""
 		# look in them all
 		return self._servers
+
+	def get_node_id_sets(self, node_ids):
+		sets = dict.fromkeys(self._servers, [])
+		for id in node_ids:
+			sets[self.from_node_id(id)].append(id)
+		return sets
 
 class IdHashPartitioner (NodePartitioner):
 	def from_node_id(self, id):

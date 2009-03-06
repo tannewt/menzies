@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from node import NodeServer
 from way import WayServer
 from relation import RelationServer
@@ -29,6 +30,16 @@ class curry:
 
         return self.fun(*(self.pending + args), **kw)
 
+# FIXME: We need a pool of open clients, this current structure isn't thread safe (I don't think)
+class ClientStatus:
+	def __init__(self, transport, client):
+		self.transport = transport
+		self.client = client
+		self.force_new = False
+
+	def needs_new_connection(self):
+		return self.force_new or not self.transport.isOpen()
+
 class Menzies:
 	
 	def __init__(self, servers={"node": [("localhost", 9091)],
@@ -41,39 +52,42 @@ class Menzies:
 		self.servers = {"node":[]}
 		for s,p in servers["node"]:
 			def makeNodeClient(server, port):
-				if True or not self.node_clients.has_key((server,port)) or not self.node_clients[(server,port)][0].isOpen():
+				if not self.node_clients.has_key((server,port)) or self.node_clients[(server,port)].needs_new_connection():
 					print "makeNodeClient(",server,port,")"
-					sys.stdout.flush()
 
 					transport = TSocket.TSocket(server,port)
 					transport = TTransport.TBufferedTransport(transport)
 					protocol = TBinaryProtocol.TBinaryProtocol(transport)
 					client = NodeServer.Client(protocol)
 					transport.open()
-					self.node_clients[(server,port)] = (transport, client)
-				return self.node_clients[(server,port)][1]
+					self.node_clients[(server,port)] = ClientStatus(transport, client)
+				return self.node_clients[(server,port)].client
 			self.servers["node"].append(curry(makeNodeClient,s,p))
 
 		def makeWayClient():
-			if True or not self.way_client or not self.way_client[0].isOpen():
+			if not self.way_client or self.way_client.needs_new_connection():
+				print "makeWayClient()"
+
 				transport = TSocket.TSocket(servers["way"][0],servers["way"][1])
 				transport = TTransport.TBufferedTransport(transport)
 				protocol = TBinaryProtocol.TBinaryProtocol(transport)
 				client = WayServer.Client(protocol)
 				transport.open()
-				self.way_client = (transport, client)
-			return self.way_client[1]
+				self.way_client = ClientStatus(transport, client)
+			return self.way_client.client
 		self.servers["way"] = makeWayClient
 
 		def makeRelationClient():
-			if True or not self.relation_client or not self.relation_client[0].isOpen():
+			if not self.relation_client or self.relation_client.needs_new_connection():
+				print "makeRelationClient()"
+
 				transport = TSocket.TSocket(servers["relation"][0],servers["relation"][1])
 				transport = TTransport.TBufferedTransport(transport)
 				protocol = TBinaryProtocol.TBinaryProtocol(transport)
 				client = RelationServer.Client(protocol)
 				transport.open()
-				self.relation_client = (transport, client)
-			return self.relation_client[1]
+				self.relation_client = ClientStatus(transport, client)
+			return self.relation_client.client
 		self.servers["relation"] = makeRelationClient
 
 		self.node_partitioner = StaticLatPartitioner(self.servers["node"])
@@ -169,21 +183,22 @@ class Menzies:
 							osm.relations.append(relation_in_relation)
 							relation_set.add(relation_in_relation.id)
 
-				# Fetch nodes outside the bounding box that are part of ways within the bounding box
-				for way in osm.ways:
-					for node_id in way.nodes:
-						if node_id not in node_set:
-							for server in self.node_partitioner.from_node_id(node_id):
-								try:
-									node = server().getNode(node_id)
-								except TApplicationException, e:
-									if e.type != TApplicationException.MISSING_RESULT:
-										raise e
-									node = None
-								if node:
-									osm.nodes.append(node)
-									node_set.add(node_id)
-									break
+			print "Fetching nodes outside the bounding box"
+			# Fetch nodes outside the bounding box that are part of ways within the bounding box
+			for way in osm.ways:
+				for node_id in way.nodes:
+					if node_id not in node_set:
+						for server in self.node_partitioner.from_node_id(node_id):
+							try:
+								node = server().getNode(node_id)
+							except TApplicationException, e:
+								if e.type != TApplicationException.MISSING_RESULT:
+									raise e
+								node = None
+							if node:
+								osm.nodes.append(node)
+								node_set.add(node_id)
+								break
 
 		return osm
 
