@@ -106,15 +106,12 @@ class Menzies:
 		self.db.close()
 
 	def getAllInBounds(self, box):
-		osm = Osm()
-
-		osm.nodes = []
-		osm.ways = []
-		osm.relations = []
 
 		relation_set = set()
 		way_set = set()
 		node_set = set()
+
+		nodes_in_ways = set()
 
 		for server in self.node_partitioner.from_box(box):
 			# get all nodes in the box
@@ -128,7 +125,7 @@ class Menzies:
 			# for each of those nodes
 			for node in nodes:
 				node_set.add(node.id)
-				osm.nodes.append(node)
+				yield (0, node)
 				
 				#get all the ways this node is in
 				try:
@@ -140,9 +137,11 @@ class Menzies:
 				
 				# for each of these ways
 				for way in ways:
+					for node_id in way.nodes: nodes_in_ways.add(node_id)
+
 					if way.id not in way_set:
-						osm.ways.append(way)
 						way_set.add(way.id)
+						yield (1, way)
 				
 					# get all relations this way is in
 					try:
@@ -154,8 +153,8 @@ class Menzies:
 					
 					for relation in relations:
 						if relation.id not in relation_set:
-							osm.relations.append(relation)
 							relation_set.add(relation.id)
+							yield (2, relation)
 				
 				# get all relations this node is in
 				try:
@@ -167,8 +166,8 @@ class Menzies:
 				
 				for relation in relations:
 					if relation.id not in relation_set:
-						osm.relations.append(relation)
 						relation_set.add(relation.id)
+						yield (2, relation)
 
 					# get all relations this relation is in
 					try:
@@ -180,27 +179,24 @@ class Menzies:
 					
 					for relation_in_relation in relations2:
 						if relation_in_relation.id not in relation_set:
-							osm.relations.append(relation_in_relation)
 							relation_set.add(relation_in_relation.id)
+							yield (2, relation_in_relation)
 
 			print "Fetching nodes outside the bounding box"
 			# Fetch nodes outside the bounding box that are part of ways within the bounding box
-			for way in osm.ways:
-				for node_id in way.nodes:
-					if node_id not in node_set:
-						for server in self.node_partitioner.from_node_id(node_id):
-							try:
-								node = server().getNode(node_id)
-							except TApplicationException, e:
-								if e.type != TApplicationException.MISSING_RESULT:
-									raise e
-								node = None
-							if node:
-								osm.nodes.append(node)
-								node_set.add(node_id)
-								break
-
-		return osm
+			for node_id in nodes_in_ways:
+				if node_id not in node_set:
+					for server in self.node_partitioner.from_node_id(node_id):
+						try:
+							node = server().getNode(node_id)
+						except TApplicationException, e:
+							if e.type != TApplicationException.MISSING_RESULT:
+								raise e
+							node = None
+						if node:
+							node_set.add(node_id)
+							yield (0, node)
+							break
 
 	def getNode(self,id):
 		for s in self.node_partitioner.from_node_id(id):

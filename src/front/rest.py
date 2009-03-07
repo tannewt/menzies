@@ -565,38 +565,31 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 				self.end_headers()
 				return
 
-			# A thought: make getAllInBounds a generator and build the XML as we go
-			# We can do this CPU intensive work as we go, since otherwise this box is hardly doing anything
-			osm = menzies.getAllInBounds(box)
-			if osm:
-				doc = impl.createDocument(None, "osm", None)
-				root = doc.documentElement
-				print str(osm)[:100], "..."
-				print "Nodes: %d" % len(osm.nodes)
-				print "Ways: %d" % len(osm.ways)
-				print "Relations: %d" % len(osm.relations)
-				for relation in osm.relations:
-					root.appendChild(self.relation_to_xml(doc, relation))
-				for way in osm.ways:
-					root.appendChild(self.way_to_xml(doc, way))
-				for node in osm.nodes:
-					root.appendChild(self.node_to_xml(doc, node))
+			doc = impl.createDocument(None, "osm", None)
+			root = doc.documentElement
 
-				try:
-					xml_str = doc.toxml()
-				except Exception, e:
-					print str(osm)
-					print e
-					print "Failed to convert document to XML"
-				else:
-					self.send_response(200)
-					self.send_header("Content-type", "text/xml")
-					self.send_header("Content-length", str(len(xml_str)))
-					self.end_headers()
-					self.wfile.write(xml_str)
+			# TODO: The XML processing could be done in another thread.  Might as well do CPU + network work in parallel.
+			for type, obj in menzies.getAllInBounds(box):
+				if type == 0:
+					root.appendChild(self.node_to_xml(doc, obj))
+				elif type == 1:
+					root.appendChild(self.way_to_xml(doc, obj))
+				elif type == 2:
+					root.appendChild(self.relation_to_xml(doc, obj))
+
+			try:
+				xml_str = doc.toxml()
+			except Exception, e:
+				print str(osm)
+				print e
+				print "Failed to convert document to XML"
+				self.send_response(500)
 			else:
-				self.send_response(410)
+				self.send_response(200)
+				self.send_header("Content-type", "text/xml")
+				self.send_header("Content-length", str(len(xml_str)))
 				self.end_headers()
+				self.wfile.write(xml_str)
 			print "getAll(",box,")"
 	
 	def do_DELETE(self):
