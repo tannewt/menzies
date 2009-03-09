@@ -65,6 +65,7 @@ class NodeRequestHandler:
 
 	def createNode(self, node):
 		node.version = 1
+		node.visible = True
 
 		data = thrift_wrapper.to_string(node)
 		# Note to self: The bulk import process was 100's times faster not creating a new cursor
@@ -99,7 +100,11 @@ class NodeRequestHandler:
 			data_pair = cursor.get("%d"%id, bdb.DB_NEXT_DUP)
 
 		cursor.close()
-		return nodes
+
+		if len(nodes) > 0:
+			return nodes
+		else:
+			return None
 
 	def deleteNode(self, node_id):
 		node_id_str = "%d"%node_id
@@ -117,6 +122,9 @@ class NodeRequestHandler:
 			cursor.put(node_id_str, data, bdb.DB_KEYFIRST)
 
 			cursor.close()
+
+			self.spatial_index.remove(old_node)
+
 			return old_node.version
 		else:
 			# There was no previous version!
