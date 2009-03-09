@@ -1,0 +1,128 @@
+Index: QMapControl/browserimagemanager.cpp
+===================================================================
+--- QMapControl/browserimagemanager.cpp	(revision 14049)
++++ QMapControl/browserimagemanager.cpp	(working copy)
+@@ -276,6 +276,7 @@
+ 
+ void BrowserImageManager::setProxy(QString host, int port)
+ {
++	/*
+ 	if (!host.isEmpty()) {
+ #if QT_VERSION >= 0x040400
+ 		proxy.setType(QNetworkProxy::HttpCachingProxy);
+@@ -285,5 +286,6 @@
+ 		proxy.setHostName(host);
+ 		proxy.setPort(port);
+ 	}
++	*/
+ }
+ 
+Index: Map/DownloadOSM.cpp
+===================================================================
+--- Map/DownloadOSM.cpp	(revision 14049)
++++ Map/DownloadOSM.cpp	(working copy)
+@@ -27,6 +27,7 @@
+ #include <QProgressDialog>
+ #include <QStatusBar>
+ #include <QInputDialog>
++#include <QNetworkProxy>
+ 
+ #include "zlib/zlib.h"
+ 
+@@ -184,8 +185,19 @@
+ 	Content.clear();
+ 	QBuffer ResponseBuffer(&Content);
+ 	ResponseBuffer.open(QIODevice::WriteOnly);
+-	if (UseProxy)
+-		Request.setProxy(ProxyHost,ProxyPort);
++
++	if (UseProxy) {
++		QNetworkProxy proxy;
++		proxy.setType(QNetworkProxy::Socks5Proxy);
++		proxy.setHostName(ProxyHost);
++		proxy.setPort(ProxyPort);
++		qDebug() << "Set proxy to " << ProxyHost << ":" << ProxyPort;
++		QNetworkProxy::setApplicationProxy(proxy);
++	}
++
++	/*if (UseProxy)
++		Request.setProxy(ProxyHost,ProxyPort);*/
++
+ 	QHttpRequestHeader Header("GET",url);
+ 	Header.setValue("Accept-Encoding", "gzip,deflate");
+ 	if (Port == 80)
+@@ -198,6 +210,14 @@
+ 	if (Loop.exec() == QDialog::Rejected)
+ 	{
+ 		Request.abort();
++
++		if (UseProxy) {
++			QNetworkProxy proxy;
++			proxy.setType(QNetworkProxy::NoProxy);
++			qDebug() << "Removing proxy";
++			QNetworkProxy::setApplicationProxy(proxy);
++		}
++
+ 		return false;
+ 	}
+ 
+@@ -220,6 +240,13 @@
+ 		}
+ 	}
+ 
++	if (UseProxy) {
++		QNetworkProxy proxy;
++		proxy.setType(QNetworkProxy::NoProxy);
++		qDebug() << "Removing proxy";
++		QNetworkProxy::setApplicationProxy(proxy);
++	}
++
+ #ifdef DEBUG_EVERY_CALL
+ 	showDebug("GET", url, QByteArray() ,Content);
+ #endif
+@@ -237,6 +264,15 @@
+ 	QByteArray ba(Data.toUtf8());
+ 	QBuffer Buf(&ba);
+ 
++	if (UseProxy) {
++		QNetworkProxy proxy;
++		proxy.setType(QNetworkProxy::Socks5Proxy);
++		proxy.setHostName(ProxyHost);
++		proxy.setPort(ProxyPort);
++		qDebug() << "Set proxy to " << ProxyHost << ":" << ProxyPort;
++		QNetworkProxy::setApplicationProxy(proxy);
++	}
++
+ 	if (UseProxy)
+ 		Request.setProxy(ProxyHost,ProxyPort);
+ 	QHttpRequestHeader Header(Method,URL);
+@@ -255,6 +291,14 @@
+ 	if (Loop.exec() == QDialog::Rejected)
+ 	{
+ 		Request.abort();
++
++		if (UseProxy) {
++			QNetworkProxy proxy;
++			proxy.setType(QNetworkProxy::NoProxy);
++			qDebug() << "Removing proxy";
++			QNetworkProxy::setApplicationProxy(proxy);
++		}
++
+ 		return false;
+ 	}
+ 	Content = Request.readAll();
+@@ -267,6 +311,14 @@
+ 			Content = Uncompressed;
+ 		}
+ 	}
++
++	if (UseProxy) {
++		QNetworkProxy proxy;
++		proxy.setType(QNetworkProxy::NoProxy);
++		qDebug() << "Removing proxy";
++		QNetworkProxy::setApplicationProxy(proxy);
++	}
++
+ #ifdef DEBUG_NONGET_CALL
+ 	showDebug(Method,URL,Data,Content);
+ #endif
