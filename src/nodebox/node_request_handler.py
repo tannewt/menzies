@@ -24,6 +24,7 @@ class NodeRequestHandler:
 
 	def cleanup(self):
 		self.db.close()
+		self.spatial_index.cleanup()
 
 	def ping(self):
 		pass
@@ -72,20 +73,12 @@ class NodeRequestHandler:
 		# Maybe unnecessary locking issues?
 		cursor = self.db.cursor()
 		cursor.put("%d"%node.id, data, bdb.DB_KEYFIRST)
-		#if Rtree:
-		#	self.spatial_index.add(node.id, (node.lat, node.lon))
 		cursor.close()
-		return node.id
 
-	def createNodes(self, nodes):
-		cursor = self.db.cursor()
-		for node in nodes:
-			data = thrift_wrapper.to_string(node)
-			cursor.put("%d"%node.id, data, bdb.DB_KEYFIRST)
-			#if Rtree:
-			#	self.spatial_index.add(node.id, (node.lat, node.lon))
-			return node.id
-		cursor.close()
+		if self.spatial_index:
+			self.spatial_index.insert(node)
+
+		return node.id
 
 	def getNodeHistory(self, id):
 		nodes = []

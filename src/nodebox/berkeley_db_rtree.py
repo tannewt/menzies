@@ -15,6 +15,9 @@ class RTree:
 		self.db = bdb.DB()
 		self.db.open(filename, "Spatial Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
+	def cleanup(self):
+		self.db.close()
+
 	def likely_intersection(self, bounds):
 		traversals = 0
 
@@ -85,6 +88,10 @@ class RTree:
 			ids = pickle.loads(pickled_ids)
 
 			if level == 0: # We're at the best leaf, add it
+				if node.id in ids:
+					print "Warning: not adding duplicate id to spatial index"
+					return
+
 				# Get the potentially expanded bounds
 				rect = Rectangle()
 				rect.node_ids = ids
@@ -99,7 +106,7 @@ class RTree:
 			else: # We're at an intermediate node, keep going
 				best = None
 				for id in ids:
-					page = self.db.get(key)
+					page = self.db.get(id)
 					min_lat, min_lon, max_lat, max_lon, pickled_ids = page.split(":")
 
 					rect = Rectangle()
@@ -147,17 +154,24 @@ class RTree:
 
 			if level == 0: # We're at a leaf that intersects, done
 				ids.remove(node.id)
-				self.db.put(key, pickle.dumps(ids))
+
+				rect = Rectangle()
+				rect.node_ids = ids
+				rect.min_lat = float(min_lat)
+				rect.min_lon = float(min_lon)
+				rect.max_lat = float(max_lat)
+				rect.max_lon = float(max_lon)
+
+				self.db.put(key, str(rect))
 			else: # We're at an intermediate node, keep going
 				for id in ids:
-					for i in traverse_to(level - 1, id): yield i
+					traverse_to(level - 1, id)
 
 		root_level = self.db.get("levels")
 		if root_level:
 			key = "%s-%d-%d" % (root_level, 0, 0)
-			for i in traverse_to(int(root_level), key): yield i
+			traverse_to(int(root_level), key)
 		else:
 			print "No nodes on this server"
 			raise StopIteration
 
-	
