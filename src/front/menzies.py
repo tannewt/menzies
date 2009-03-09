@@ -12,6 +12,8 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
 import threading
+from Queue import *
+
 import sys, os
 from bsddb import db as bdb
 
@@ -30,8 +32,43 @@ class curry:
 
         return self.fun(*(self.pending + args), **kw)
 
-# FIXME: We need a pool of open clients, this current structure isn't thread safe (I don't think)
-class ClientStatus:
+class ClientPool:
+	def __init__(self, servers):
+		self.server_info = servers
+
+		self.pool_size = 1
+
+		self.free_servers = {}
+		self.used_servers = {}
+
+		for server, make_it in servers.items():
+			self.free_servers[server] = Queue(0)
+			for i in range(self.pool_size):
+				self.free_servers[server].put(None)
+
+	# Block until we are able to acquire clients open to the given servers
+	def acquire(self, servers):
+		clients = {}
+
+		for server in servers:
+			print "acquiring %s" % str(server)
+			wrapper = self.free_servers[server].get(True)
+			if not wrapper or wrapper.needs_new_connection():
+				wrapper = self.server_info[server]()
+
+			print "got %s - %s" % (str(server), str(wrapper.client))
+
+			clients[server] = wrapper.client
+			self.used_servers[wrapper.client] = wrapper
+
+		return clients
+
+	def release(self, clients):
+		for info, client in clients.items():
+			wrapper = self.used_servers.pop(client)
+			self.free_servers[info].put(wrapper)
+
+class ClientWrapper:
 	def __init__(self, transport, client):
 		self.transport = transport
 		self.client = client
@@ -43,54 +80,49 @@ class ClientStatus:
 class Menzies:
 	
 	def __init__(self, servers={"node": [("localhost", 9091)],
-															"way":('localhost','9090'),
-															"relation":('localhost','9092')}):
-		self.node_clients = {}
-		self.way_client = None
-		self.relation_client = None
+															"way":('localhost',9090),
+															"relation":('localhost',9092)}):
+		
+		self.servers = servers
 
-		self.servers = {"node":[]}
-		for s,p in servers["node"]:
-			def makeNodeClient(server, port):
-				if not self.node_clients.has_key((server,port)) or self.node_clients[(server,port)].needs_new_connection():
-					print "makeNodeClient(",server,port,")"
+		def makeNodeClient(server, port):
+			print "makeNodeClient(",server,port,")"
 
-					transport = TSocket.TSocket(server,port)
-					transport = TTransport.TBufferedTransport(transport)
-					protocol = TBinaryProtocol.TBinaryProtocol(transport)
-					client = NodeServer.Client(protocol)
-					transport.open()
-					self.node_clients[(server,port)] = ClientStatus(transport, client)
-				return self.node_clients[(server,port)].client
-			self.servers["node"].append(curry(makeNodeClient,s,p))
+			transport = TSocket.TSocket(server,port)
+			transport = TTransport.TBufferedTransport(transport)
+			protocol = TBinaryProtocol.TBinaryProtocol(transport)
+			client = NodeServer.Client(protocol)
+			transport.open()
+			return ClientWrapper(transport, client)
 
-		def makeWayClient():
-			if not self.way_client or self.way_client.needs_new_connection():
-				print "makeWayClient()"
+		def makeWayClient(server, port):
+			print "makeWayClient()"
 
-				transport = TSocket.TSocket(servers["way"][0],servers["way"][1])
-				transport = TTransport.TBufferedTransport(transport)
-				protocol = TBinaryProtocol.TBinaryProtocol(transport)
-				client = WayServer.Client(protocol)
-				transport.open()
-				self.way_client = ClientStatus(transport, client)
-			return self.way_client.client
-		self.servers["way"] = makeWayClient
+			transport = TSocket.TSocket(server,port)
+			transport = TTransport.TBufferedTransport(transport)
+			protocol = TBinaryProtocol.TBinaryProtocol(transport)
+			client = WayServer.Client(protocol)
+			transport.open()
+			return ClientWrapper(transport, client)
 
-		def makeRelationClient():
-			if not self.relation_client or self.relation_client.needs_new_connection():
-				print "makeRelationClient()"
+		def makeRelationClient(server,port):
+			print "makeRelationClient()"
 
-				transport = TSocket.TSocket(servers["relation"][0],servers["relation"][1])
-				transport = TTransport.TBufferedTransport(transport)
-				protocol = TBinaryProtocol.TBinaryProtocol(transport)
-				client = RelationServer.Client(protocol)
-				transport.open()
-				self.relation_client = ClientStatus(transport, client)
-			return self.relation_client.client
-		self.servers["relation"] = makeRelationClient
+			transport = TSocket.TSocket(server,port)
+			transport = TTransport.TBufferedTransport(transport)
+			protocol = TBinaryProtocol.TBinaryProtocol(transport)
+			client = RelationServer.Client(protocol)
+			transport.open()
+			return ClientWrapper(transport, client)
 
-		self.node_partitioner = StaticLatPartitioner(self.servers["node"])
+		server_info = {}
+		server_info[servers["way"]] = curry(makeWayClient,*servers["way"])
+		server_info[servers["relation"]] = curry(makeRelationClient,*servers["relation"])
+		for info in servers["node"]:
+			server_info[info] = curry(makeNodeClient,*info)
+		self.client_pool = ClientPool(server_info)
+
+		self.node_partitioner = StaticLatPartitioner(servers["node"])
 
 		self.db = bdb.DB()
 		#self.db.set_flags(bdb.DB_DUP)
@@ -106,6 +138,14 @@ class Menzies:
 		self.db.close()
 
 	def getAllInBounds(self, box):
+		servers = self.client_pool.acquire([self.servers["way"]] + [self.servers["relation"]] + self.servers["node"])
+
+		try:
+			for x in self._getAllInBounds(servers, box): yield x
+		finally:
+			self.client_pool.release(servers)
+
+	def _getAllInBounds(self, servers, box):
 
 		relation_set = set()
 		way_set = set()
@@ -113,10 +153,12 @@ class Menzies:
 
 		nodes_in_ways = set()
 
-		for server in self.node_partitioner.from_box(box):
+		for server_info in self.node_partitioner.from_box(box):
+			server = servers[server_info]
+
 			# get all nodes in the box
 			try:
-				nodes = server().getNodesInBounds(box)
+				nodes = server.getNodesInBounds(box)
 			except TApplicationException, e:
 				if e.type != TApplicationException.MISSING_RESULT:
 					raise e
@@ -129,7 +171,7 @@ class Menzies:
 				
 				#get all the ways this node is in
 				try:
-					ways = self.servers["way"]().getWaysFromNode(node.id)
+					ways = servers[self.servers["way"]].getWaysFromNode(node.id)
 				except TApplicationException, e:
 					if e.type != TApplicationException.MISSING_RESULT:
 						raise e
@@ -145,7 +187,7 @@ class Menzies:
 				
 					# get all relations this way is in
 					try:
-						relations = self.servers["relation"]().getRelationsFromWay(way.id)
+						relations = servers[self.servers["relation"]].getRelationsFromWay(way.id)
 					except TApplicationException, e:
 						if e.type != TApplicationException.MISSING_RESULT:
 							raise e
@@ -158,7 +200,7 @@ class Menzies:
 				
 				# get all relations this node is in
 				try:
-					relations = self.servers["relation"]().getRelationsFromNode(node.id)
+					relations = servers[self.servers["relation"]].getRelationsFromNode(node.id)
 				except TApplicationException, e:
 					if e.type != TApplicationException.MISSING_RESULT:
 						raise e
@@ -171,7 +213,7 @@ class Menzies:
 
 					# get all relations this relation is in
 					try:
-						relations2 = self.servers["relation"]().getRelationsFromRelation(relation.id)
+						relations2 = servers[self.servers["relation"]].getRelationsFromRelation(relation.id)
 					except TApplicationException, e:
 						if e.type != TApplicationException.MISSING_RESULT:
 							raise e
@@ -186,9 +228,10 @@ class Menzies:
 			# Fetch nodes outside the bounding box that are part of ways within the bounding box
 			for node_id in nodes_in_ways:
 				if node_id not in node_set:
-					for server in self.node_partitioner.from_node_id(node_id):
+					for server_info in self.node_partitioner.from_node_id(node_id):
+						server = servers[server_info]
 						try:
-							node = server().getNode(node_id)
+							node = server.getNode(node_id)
 						except TApplicationException, e:
 							if e.type != TApplicationException.MISSING_RESULT:
 								raise e
@@ -198,10 +241,18 @@ class Menzies:
 							yield (0, node)
 							break
 
-	def getNode(self,id):
-		for s in self.node_partitioner.from_node_id(id):
+	def getNode(self, id):
+		servers = self.client_pool.acquire(self.servers["node"])
+		try:
+			return self._getNode(servers, id)
+		finally:
+			self.client_pool.release(servers)
+
+	def _getNode(self, servers, id):
+		for s_info in self.node_partitioner.from_node_id(id):
+			s = servers[s_info]
 			try:
-				n = s().getNode(id)
+				n = s.getNode(id)
 				return n
 			except TApplicationException, e:
 				if e.type != TApplicationException.MISSING_RESULT:
@@ -212,9 +263,17 @@ class Menzies:
 		return None
 	
 	def getNodeVersion(self, id, version):
-		for s in self.node_partitioner.from_node_id(id):
+		servers = self.client_pool.acquire(self.servers["node"])
+		try:
+			return self._getNodeVersion(servers, id, version)
+		finally:
+			self.client_pool.release(servers)
+
+	def _getNodeVersion(self, servers, id, version):
+		for s_info in self.node_partitioner.from_node_id(id):
+			s = servers[s_info]
 			try:
-				n = s().getNodeVersion(id, version)
+				n = s.getNodeVersion(id, version)
 				return n
 			except TApplicationException, e:
 				if e.type != TApplicationException.MISSING_RESULT:
@@ -223,9 +282,17 @@ class Menzies:
 		return None
 	
 	def editNode(self, node):
-		for s in self.node_partitioner.from_node(node):
+		servers = self.client_pool.acquire(self.servers["node"])
+		try:
+			return self._editNode(servers, node)
+		finally:
+			self.client_pool.release(servers)
+
+	def _editNode(self, servers, node):
+		for s_info in self.node_partitioner.from_node(node):
+			s = servers[s_info]
 			try:
-				n = s().editNode(node)
+				n = s.editNode(node)
 				return n
 			except TApplicationException, e:
 				if e.type != TApplicationException.MISSING_RESULT:
@@ -234,9 +301,18 @@ class Menzies:
 		return None
 	
 	def deleteNode(self, node_id):
-		for s in self.node_partitioner.from_node_id(node_id):
+		servers = self.client_pool.acquire(self.servers["node"])
+		try:
+			return self._deleteNode(servers, node_id)
+		finally:
+			self.client_pool.release(servers)
+
+
+	def _deleteNode(self, servers, node_id):
+		for s_info in self.node_partitioner.from_node_id(node_id):
+			s = servers[s_info]
 			try:
-				n = s().deleteNode(node_id)
+				n = s.deleteNode(node_id)
 				return n
 			except TApplicationException, e:
 				if e.type != TApplicationException.MISSING_RESULT:
@@ -245,6 +321,13 @@ class Menzies:
 		return None
 	
 	def createNode(self, node):
+		servers = self.client_pool.acquire(self.servers["node"])
+		try:
+			return self._createNode(servers, node)
+		finally:
+			self.client_pool.release(servers)
+
+	def _createNode(self, servers, node):
 		self.increment_lock.acquire()
 		next_id = long(self.db.get("next_node_id"))
 		self.db.delete("next_node_id")
@@ -254,13 +337,22 @@ class Menzies:
 		node.id = next_id
 		print "next_node_id: ", self.db.get("next_node_id")
 		
-		self.node_partitioner.from_node(node)[0]().createNode(node)
+		servers[self.node_partitioner.from_node(node)[0]].createNode(node)
 		return node.id
 	
 	def getNodeHistory(self, id):
-		for s in self.node_partitioner.from_node_id(id):
+		servers = self.client_pool.acquire(self.servers["node"])
+		try:
+			return self._getNodeHistory(servers, id)
+		finally:
+			self.client_pool.release(servers)
+
+
+	def _getNodeHistory(self, servers, id):
+		for s_info in self.node_partitioner.from_node_id(id):
+			s = servers[s_info]
 			try:
-				n = s().getNodeHistory(id)
+				n = s.getNodeHistory(id)
 				return n
 			except TApplicationException, e:
 				if e.type != TApplicationException.MISSING_RESULT:
@@ -269,8 +361,15 @@ class Menzies:
 		return None
 
 	def getWaysFromNode(self, id):
+		servers = self.client_pool.acquire([self.servers["way"]])
 		try:
-			ways = self.servers["way"]().getWaysFromNode(id)
+			return self._getWaysFromNode(servers, id)
+		finally:
+			self.client_pool.release(servers)
+
+	def _getWaysFromNode(self, servers, id):
+		try:
+			ways = servers[self.servers["way"]].getWaysFromNode(id)
 			return ways
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
@@ -279,8 +378,15 @@ class Menzies:
 		return None
 
 	def getWay(self, id):
+		servers = self.client_pool.acquire([self.servers["way"]])
 		try:
-			way = self.servers["way"]().getWay(id)
+			return self._getWay(servers, id)
+		finally:
+			self.client_pool.release(servers)
+
+	def _getWay(self, servers, id):
+		try:
+			way = servers[self.servers["way"]].getWay(id)
 			return way
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
@@ -289,8 +395,16 @@ class Menzies:
 		return None
 
 	def getWayVersion(self, id, version):
+		servers = self.client_pool.acquire([self.servers["way"]])
 		try:
-			w = self.servers["way"]().getWayVersion(id, version)
+			return self._getWayVersion(servers, id, version)
+		finally:
+			self.client_pool.release(servers)
+
+
+	def _getWayVersion(self, servers, id, version):
+		try:
+			w = servers[self.servers["way"]].getWayVersion(id, version)
 			return w
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
@@ -299,8 +413,15 @@ class Menzies:
 		return None
 	
 	def editWay(self, way):
+		servers = self.client_pool.acquire([self.servers["way"]])
 		try:
-			w = self.servers["way"]().editWay(way)
+			return self._editWay(servers, way)
+		finally:
+			self.client_pool.release(servers)
+
+	def _editWay(self, servers, way):
+		try:
+			w = servers[self.servers["way"]].editWay(way)
 			return w
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
@@ -309,8 +430,15 @@ class Menzies:
 		return None
 	
 	def deleteWay(self, way):
+		servers = self.client_pool.acquire([self.servers["way"]])
 		try:
-			w = self.servers["way"]().deleteWay(way)
+			return self._deleteWay(servers, way)
+		finally:
+			self.client_pool.release(servers)
+
+	def _deleteWay(self, servers, way):
+		try:
+			w = servers[self.servers["way"]].deleteWay(way)
 			return w
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
@@ -319,11 +447,25 @@ class Menzies:
 		return None
 	
 	def createWay(self, way):
-		return self.servers["way"]().createWay(way)
+		servers = self.client_pool.acquire([self.servers["way"]])
+		try:
+			return self._createWay(servers, way)
+		finally:
+			self.client_pool.release(servers)
+
+	def _createWay(self, servers, way):
+		return servers[self.servers["way"]].createWay(way)
 
 	def getWayHistory(self, id):
+		servers = self.client_pool.acquire([self.servers["way"]])
 		try:
-			w = self.servers["way"]().getWayHistory(id)
+			return self._getWayHistory(servers, id)
+		finally:
+			self.client_pool.release(servers)
+
+	def _getWayHistory(self, servers, id):
+		try:
+			w = servers[self.servers["way"]].getWayHistory(id)
 			return w
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
@@ -332,9 +474,16 @@ class Menzies:
 		return None
 
 	def getWayFull(self, id):
+		servers = self.client_pool.acquire([self.servers["way"]])
+		try:
+			return self._getWayFull(servers, id)
+		finally:
+			self.client_pool.release(servers)
+
+	def _getWayFull(self, servers, id):
 		try:
 			osm = Osm()
-			osm.ways = [self.servers["way"]().getWay(id)]
+			osm.ways = [servers[self.servers["way"]].getWay(id)]
 			osm.nodes = []
 			for node_id in osm.ways[0].nodes:
 				osm.nodes.append(self.getNode(node_id))
@@ -346,8 +495,15 @@ class Menzies:
 		return None
 
 	def getRelationsFromNode(self, id):
+		servers = self.client_pool.acquire([self.servers["relation"]])
 		try:
-			relations = self.servers["relation"]().getRelationsFromNode(id)
+			return self._getRelationsFromNode(servers, id)
+		finally:
+			self.client_pool.release(servers)
+
+	def _getRelationsFromNode(self, servers, id):
+		try:
+			relations = servers[self.servers["relation"]].getRelationsFromNode(id)
 			return relations
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
@@ -356,8 +512,15 @@ class Menzies:
 		return None
 
 	def getRelationsFromWay(self, id):
+		servers = self.client_pool.acquire([self.servers["relation"]])
 		try:
-			relations = self.servers["relation"]().getRelationsFromWay(id)
+			return self._getRelationsFromWay(servers, id)
+		finally:
+			self.client_pool.release(servers)
+
+	def _getRelationsFromWay(self, servers, id):
+		try:
+			relations = servers[self.servers["relation"]].getRelationsFromWay(id)
 			return relations
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
@@ -366,8 +529,15 @@ class Menzies:
 		return None
 
 	def getRelationsFromRelation(self, id):
+		servers = self.client_pool.acquire([self.servers["relation"]])
 		try:
-			relations = self.servers["relation"]().getRelationsFromRelation(id)
+			return self._getRelationsFromRelation(servers, id)
+		finally:
+			self.client_pool.release(servers)
+
+	def _getRelationsFromRelation(self, servers, id):
+		try:
+			relations = servers[self.servers["relation"]].getRelationsFromRelation(id)
 			return relations
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
@@ -376,8 +546,15 @@ class Menzies:
 		return None
 
 	def getRelation(self, id):
+		servers = self.client_pool.acquire([self.servers["relation"]])
 		try:
-			relation = self.servers["relation"]().getRelation(id)
+			return self._getRelation(servers, id)
+		finally:
+			self.client_pool.release(servers)
+
+	def _getRelation(self, servers, id):
+		try:
+			relation = servers[self.servers["relation"]].getRelation(id)
 			return relation
 		except TApplicationException, e:
 			if e.type != TApplicationException.MISSING_RESULT:
@@ -386,9 +563,16 @@ class Menzies:
 		return None
 
 	def getRelationFull(self, id):
+		servers = self.client_pool.acquire([self.servers["relation"], self.servers["way"]])
+		try:
+			return self._getRelationFull(servers, id)
+		finally:
+			self.client_pool.release(servers)
+
+	def _getRelationFull(self, servers, id):
 		try:
 			osm = Osm()
-			osm.relations = [self.servers["relation"]().getRelation(id)]
+			osm.relations = [servers[self.servers["relation"]].getRelation(id)]
 
 			osm.nodes = []
 			osm.ways = []
@@ -397,9 +581,9 @@ class Menzies:
 				if member.node != None:
 					osm.nodes.append(self.getNode(member.node))
 				elif member.way != None:
-					osm.ways.append(self.servers["way"]().getWay(member.way))
+					osm.ways.append(servers[self.servers["way"]].getWay(member.way))
 				elif member.relation != None:
-					osm.relations.append(self.servers["relation"]().getRelation(member.relation))
+					osm.relations.append(servers[self.servers["relation"]].getRelation(member.relation))
 
 			return osm
 		except TApplicationException, e:
@@ -409,7 +593,14 @@ class Menzies:
 		return None
 
 	def createRelation(self, relation):
-		return self.servers["relation"]().createRelation(relation)
+		servers = self.client_pool.acquire([self.servers["relation"]])
+		try:
+			return self._createRelation(servers, relation)
+		finally:
+			self.client_pool.release(servers)
+
+	def _createRelation(self, servers, relation):
+		return servers[self.servers["relation"]].createRelation(relation)
 	
 	def createChangeset(self, changeset):
 		i = self.next_changeset_id

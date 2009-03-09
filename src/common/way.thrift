@@ -1,6 +1,7 @@
 include "data.thrift"
 
 service WayServer {
+	void ping()
 	data.Way getWay(1: i64 id),
 	data.Way getWayVersion(1: i64 id, 2: i32 version)
 	list<data.Way> getWays(1: list<i64> ids),
@@ -10,4 +11,3 @@ service WayServer {
 	i64 createWay(1: data.Way way),
 	list<data.Way> getWayHistory(1: i64 id)
 }
-

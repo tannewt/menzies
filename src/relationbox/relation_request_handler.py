@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # Implements the methods provided by the service defined in 'relation.thrift'
 #
@@ -59,6 +60,9 @@ class RelationRequestHandler:
 			print "%s -> %s" % (data_pair[0],relation)
 			data_pair = cursor.get(None, bdb.DB_NEXT)
 		cursor.close()
+
+	def ping(self):
+		pass
 
 	def getRelation(self, id):
 		relation = Relation()

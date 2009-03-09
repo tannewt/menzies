@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 import subprocess
 import sys
@@ -10,7 +11,7 @@ from bsddb import db as bdb
 config = {'way': {'args':[],'deps':[]},
 				'relation': {'args':[],'deps':[]},
 				'node': {'args':[],'deps':[]},
-				'nodes': {'num' : 4},
+				'nodes': {'num' : 1},
 				'front': {'args':[],
 									'deps':['way','relation','nodes']}}
 
@@ -85,7 +86,7 @@ for s in servers:
 		processes.append((name, p))
 	elif s=='front':
 		name = "Frontend"
-		cmd = ["python","front/rest.py"]+[str(config["nodes"]["num"])]+config[s]["args"]
+		cmd = ["python","front/rest.py"]+config[s]["args"]
 		p = run(cmd, name)
 		processes.append((name, p))
 	time.sleep(1)

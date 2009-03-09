@@ -638,6 +638,7 @@ if __name__=="__main__":
 			elif section:
 				info = line.split(":")
 				info[1] = int(info[1])
+				info = tuple(info)
 				if section == "[Nodes]":
 					servers["node"].append(info)
 				elif section == "[Way]":
@@ -647,7 +648,7 @@ if __name__=="__main__":
 	else:
 		num_nodeservers = 1
 		node_servers = map(lambda x: ("localhost", 9100+x), range(num_nodeservers))
-		servers={"node": node_servers,"way":('localhost','9090'),"relation":('localhost','9092')}
+		servers={"node": node_servers,"way":('localhost',9090),"relation":('localhost',9092)}
 
 	print "Read server configuration:"
 	print servers

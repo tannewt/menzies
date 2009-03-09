@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from bsddb import db as bdb
 
 import sys, os
@@ -23,6 +24,9 @@ class NodeRequestHandler:
 
 	def cleanup(self):
 		self.db.close()
+
+	def ping(self):
+		pass
 
 	def getNode(self, id):
 		node = Node()

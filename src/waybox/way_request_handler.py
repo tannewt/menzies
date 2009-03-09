@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # Implements the methods provided by the service defined in 'way.thrift'
 #
@@ -60,6 +61,9 @@ class WayRequestHandler:
 		while data_pair:
 			print "%s -> %s" % data_pair
 			data_pair = cursor.get(None, bdb.DB_NEXT)
+
+	def ping(self):
+		pass
 
 	def getWay(self, id):
 		print "getWay(%d)" % id
