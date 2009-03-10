@@ -58,6 +58,7 @@ class ClientPool:
 					wrapper = self.server_info[server]()
 				except:
 					print "Unable to acquire client for server"
+					self.free_servers[server].put(wrapper)
 					self.release(clients)
 					raise
 
