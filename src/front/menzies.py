@@ -257,8 +257,6 @@ class Menzies:
 			except TApplicationException, e:
 				if e.type != TApplicationException.MISSING_RESULT:
 					raise e
-				else:
-					print e.message
 
 		return None
 	

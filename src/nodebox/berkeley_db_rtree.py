@@ -76,7 +76,6 @@ class RTree:
 			for i in traverse_to(int(root_level), key): yield i
 		else:
 			print "No nodes on this server"
-			raise StopIteration
 
 	def insert(self, node):
 
@@ -134,7 +133,6 @@ class RTree:
 			traverse_to(int(root_level), key)
 		else:
 			print "No nodes on this server"
-			raise StopIteration
 
 	# FIXME: Reuse the above traverse code to implement delete
 	def delete(self, node):

@@ -135,6 +135,10 @@ class NodeRequestHandler:
 			old_node = Node()
 			thrift_wrapper.from_string(old_node, data_pair[1])
 
+			if node.lat != old_node.lat or node.lon != old_node.lon:
+				self.spatial_index.delete(old_node)
+				self.spatial_index.insert(node)
+
 			node.version = old_node.version + 1 # This is bound to have concurrency issues
 			data = thrift_wrapper.to_string(node)
 			cursor.put(node_id_str, data, bdb.DB_KEYFIRST)
