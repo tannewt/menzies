@@ -54,7 +54,12 @@ class ClientPool:
 			print "acquiring %s" % str(server)
 			wrapper = self.free_servers[server].get(True)
 			if not wrapper or wrapper.needs_new_connection():
-				wrapper = self.server_info[server]()
+				try:
+					wrapper = self.server_info[server]()
+				except:
+					print "Unable to acquire client for server"
+					self.release(clients)
+					raise
 
 			print "got %s - %s" % (str(server), str(wrapper.client))
 
