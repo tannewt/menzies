@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pickle
 
 class Rectangle:
@@ -35,11 +36,10 @@ class Rectangle:
 		return height * width
 
 	def __str__(self):
-		return "%f:%f:%f:%f:%s" % (self.min_lat, self.min_lon, self.max_lat, self.max_lon, pickle.dumps(self.node_ids))
+		return "%.10f:%.10f:%.10f:%.10f:%s" % (self.min_lat, self.min_lon, self.max_lat, self.max_lon, pickle.dumps(self.node_ids))
 
 def minimum_bounding_rectangle(data):
 	rect = Rectangle()
 	for lat, lon, node_id in data:
 		rect.include(lat, lon, node_id)
 	return rect
-

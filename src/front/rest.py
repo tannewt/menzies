@@ -235,6 +235,9 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	
 	def do_PUT(self):
 		global menzies
+
+		new_id = None
+
 		xml_in = self.rfile.read(int(self.headers["content-length"])).strip('\0')
 		if "authorization" in self.headers.dict:
 			auth = base64.b64decode(self.headers.dict["authorization"].split()[1])
@@ -251,42 +254,42 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			if bits[1]=="create":
 				node = self.node_from_xml(xml_in)
 				print "createNode(",node,")"
-				id = menzies.createNode(node)
+				new_id = menzies.createNode(node)
 			else:
-				id = long(bits[1])
-				print "editNode(",id,")"
+				new_id = long(bits[1])
+				print "editNode(",new_id,")"
 				node = self.node_from_xml(xml_in)
 				version = menzies.editNode(node)
 		elif bits[0] == "way":
 			if bits[1]=="create":
 				way = self.way_from_xml(xml_in)
 				print "createWay(",way,")"
-				id = menzies.createWay(way)
+				new_id = menzies.createWay(way)
 			else:
-				id = long(bits[1])
-				print "editWay(",id,")"
+				new_id = long(bits[1])
+				print "editWay(",new_id,")"
 				way = self.way_from_xml(xml_in)
 				version = menzies.editWay(way)
 		elif bits[0] == "relation" and bits[1]=="create":
 			relation = self.relation_from_xml(xml_in)
 			print "createRelation(",relation,")"
-			id = menzies.createRelation(relation)
+			new_id = menzies.createRelation(relation)
 		elif bits[0] == "changeset":
 			if bits[1]=="create":
 				#way = self.way_from_xml(xml_in)
 				print "createChangeset(",")"
-				id = menzies.createChangeset(xml_in)
+				new_id = menzies.createChangeset(xml_in)
 		else:
 			# should send error code
 			return
 
-		print "id",id
+		print "id",new_id
 
 		self.send_response(200)
 		self.send_header("Content-type", "text/html")
 		self.send_header("Content-length", len(str(id)))
 		self.end_headers()
-		self.wfile.write(str(id))
+		self.wfile.write(str(new_id))
 
 	def do_GET(self):
 		bits,args = self.parse_path()

@@ -24,6 +24,7 @@ class NodeRequestHandler:
 
 	def cleanup(self):
 		self.db.close()
+		self.spatial_index.cleanup()
 
 	def ping(self):
 		pass
@@ -65,26 +66,19 @@ class NodeRequestHandler:
 
 	def createNode(self, node):
 		node.version = 1
+		node.visible = True
 
 		data = thrift_wrapper.to_string(node)
 		# Note to self: The bulk import process was 100's times faster not creating a new cursor
 		# Maybe unnecessary locking issues?
 		cursor = self.db.cursor()
 		cursor.put("%d"%node.id, data, bdb.DB_KEYFIRST)
-		#if Rtree:
-		#	self.spatial_index.add(node.id, (node.lat, node.lon))
 		cursor.close()
-		return node.id
 
-	def createNodes(self, nodes):
-		cursor = self.db.cursor()
-		for node in nodes:
-			data = thrift_wrapper.to_string(node)
-			cursor.put("%d"%node.id, data, bdb.DB_KEYFIRST)
-			#if Rtree:
-			#	self.spatial_index.add(node.id, (node.lat, node.lon))
-			return node.id
-		cursor.close()
+		if self.spatial_index:
+			self.spatial_index.insert(node)
+
+		return node.id
 
 	def getNodeHistory(self, id):
 		nodes = []
@@ -99,7 +93,11 @@ class NodeRequestHandler:
 			data_pair = cursor.get("%d"%id, bdb.DB_NEXT_DUP)
 
 		cursor.close()
-		return nodes
+
+		if len(nodes) > 0:
+			return nodes
+		else:
+			return None
 
 	def deleteNode(self, node_id):
 		node_id_str = "%d"%node_id
@@ -117,6 +115,9 @@ class NodeRequestHandler:
 			cursor.put(node_id_str, data, bdb.DB_KEYFIRST)
 
 			cursor.close()
+
+			self.spatial_index.delete(old_node)
+
 			return old_node.version
 		else:
 			# There was no previous version!
