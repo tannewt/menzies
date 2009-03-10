@@ -9,6 +9,9 @@ from data.ttypes import *
 from berkeley_db_rtree import RTree
 import thrift_wrapper
 
+DB_ENV = bdb.DBEnv()
+DB_ENV.open(None, bdb.DB_CREATE | bdb.DB_INIT_LOCK | bdb.DB_INIT_MPOOL | bdb.DB_THREAD)
+
 class NodeRequestHandler:
 	def __init__(self, data_dir=None):
 		if data_dir == None:
@@ -16,7 +19,7 @@ class NodeRequestHandler:
 			if os.environ.has_key("DATA_DIR"):
 				data_dir = os.environ["DATA_DIR"]
 
-		self.db = bdb.DB()
+		self.db = bdb.DB(DB_ENV)
 		self.db.set_flags(bdb.DB_DUP)
 		self.db.open(os.path.join(data_dir,"nodes.db"),"Nodes", bdb.DB_BTREE, bdb.DB_CREATE)
 

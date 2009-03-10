@@ -249,6 +249,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			self.send_header("WWW-Authenticate", "Basic realm=\"menzies\"")
 			self.end_headers()
 			return
+		
 		bits,args = self.parse_path()
 		if bits[0] == "node":
 			if bits[1]=="create":
@@ -279,6 +280,9 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 				#way = self.way_from_xml(xml_in)
 				print "createChangeset(",")"
 				new_id = menzies.createChangeset(xml_in)
+			else:
+				print "changeset",bits[1:]
+				new_id = "changeset"
 		else:
 			# should send error code
 			return

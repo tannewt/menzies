@@ -13,13 +13,16 @@ from data.ttypes import *
 
 import thrift_wrapper
 
+DB_ENV = bdb.DBEnv()
+DB_ENV.open(None, bdb.DB_CREATE | bdb.DB_INIT_LOCK | bdb.DB_INIT_MPOOL | bdb.DB_THREAD)
+
 class WayRequestHandler:
 	def __init__(self):
 		data_dir = ""
 		if os.environ.has_key("DATA_DIR"):
 			data_dir = os.environ["DATA_DIR"]
 
-		self.db = bdb.DB()
+		self.db = bdb.DB(DB_ENV)
 		self.db.set_flags(bdb.DB_DUP)
 		self.db.open(os.path.join(data_dir,"ways.db"),"Ways", bdb.DB_BTREE, bdb.DB_CREATE)
 
@@ -27,7 +30,7 @@ class WayRequestHandler:
 			print "Initializing next_id to 0"
 			self.db.put("next_id", "0")
 
-		self.reverse_node_index = bdb.DB()
+		self.reverse_node_index = bdb.DB(DB_ENV)
 		self.reverse_node_index.set_flags(bdb.DB_DUP)
 		self.reverse_node_index.open(os.path.join(data_dir,"ways_reverse_node_index.db"),"Reverse Node Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
