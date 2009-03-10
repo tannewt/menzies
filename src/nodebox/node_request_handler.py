@@ -116,7 +116,7 @@ class NodeRequestHandler:
 
 			cursor.close()
 
-			self.spatial_index.remove(old_node)
+			self.spatial_index.delete(old_node)
 
 			return old_node.version
 		else:

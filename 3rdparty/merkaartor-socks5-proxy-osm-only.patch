@@ -80,10 +80,12 @@ Index: Map/DownloadOSM.cpp
  #ifdef DEBUG_EVERY_CALL
  	showDebug("GET", url, QByteArray() ,Content);
  #endif
-@@ -237,6 +264,15 @@
+@@ -237,8 +264,18 @@
  	QByteArray ba(Data.toUtf8());
  	QBuffer Buf(&ba);
  
+-	if (UseProxy)
+-		Request.setProxy(ProxyHost,ProxyPort);
 +	if (UseProxy) {
 +		QNetworkProxy proxy;
 +		proxy.setType(QNetworkProxy::Socks5Proxy);
@@ -93,10 +95,13 @@ Index: Map/DownloadOSM.cpp
 +		QNetworkProxy::setApplicationProxy(proxy);
 +	}
 +
- 	if (UseProxy)
- 		Request.setProxy(ProxyHost,ProxyPort);
++	//if (UseProxy)
++	//	Request.setProxy(ProxyHost,ProxyPort);
++
  	QHttpRequestHeader Header(Method,URL);
-@@ -255,6 +291,14 @@
+ 	if (Port == 80)
+ 		Header.setValue("Host",Web);
+@@ -255,6 +292,14 @@
  	if (Loop.exec() == QDialog::Rejected)
  	{
  		Request.abort();
@@ -111,7 +116,7 @@ Index: Map/DownloadOSM.cpp
  		return false;
  	}
  	Content = Request.readAll();
-@@ -267,6 +311,14 @@
+@@ -267,6 +312,14 @@
  			Content = Uncompressed;
  		}
  	}

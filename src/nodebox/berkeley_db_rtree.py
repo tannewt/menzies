@@ -38,7 +38,7 @@ class RTree:
 	def traverse(self, bounds):
 
 		def contains(bounds, node):
-			return (node.lat > bounds.min_lat and node.lat < bounds.max_lat) and (node.lon > bounds.min_lon and node.lon < bounds.max_lon)
+			return (node.lat >= bounds.min_lat and node.lat <= bounds.max_lat) and (node.lon >= bounds.min_lon and node.lon <= bounds.max_lon)
 
 		def intersects(r1, r2):
 			return not (r2.min_lon > r1.max_lon
@@ -124,8 +124,8 @@ class RTree:
 					if not best or growth < best[1] or (growth == best[1] and area_after < best[2]):
 						best = (id, growth, area_after, rect)
 
-				if best[1] > 0: # This rectangle needs to grow
-					self.db.put(id, str(best[3]))
+				if best[1] > 1e-8: # This rectangle needs to grow
+					self.db.put(best[0], str(best[3]))
 				traverse_to(level - 1, best[0])
 
 		root_level = self.db.get("levels")
@@ -139,7 +139,7 @@ class RTree:
 	# FIXME: Reuse the above traverse code to implement delete
 	def delete(self, node):
 		def contains(bounds, node):
-			return (node.lat > bounds.min_lat and node.lat < bounds.max_lat) and (node.lon > bounds.min_lon and node.lon < bounds.max_lon)
+			return (node.lat >= bounds.min_lat - 1e-8 and node.lat <= bounds.max_lat + 1e-8) and (node.lon >= bounds.min_lon - 1e-8 and node.lon <= bounds.max_lon + 1e-8)
 		within = contains
 
 		def traverse_to(level, key):
@@ -147,22 +147,23 @@ class RTree:
 			min_lat, min_lon, max_lat, max_lon, pickled_ids = page.split(":")
 			page_bounds = BBox(min_lat=float(min_lat), min_lon=float(min_lon), max_lat=float(max_lat), max_lon=float(max_lon))
 
-			if not within(page_bounds, bounds):
+			if not within(page_bounds, node):
 				return
 
 			ids = pickle.loads(pickled_ids)
 
 			if level == 0: # We're at a leaf that intersects, done
-				ids.remove(node.id)
+				if node.id in ids:
+					ids.remove(node.id)
 
-				rect = Rectangle()
-				rect.node_ids = ids
-				rect.min_lat = float(min_lat)
-				rect.min_lon = float(min_lon)
-				rect.max_lat = float(max_lat)
-				rect.max_lon = float(max_lon)
+					rect = Rectangle()
+					rect.node_ids = ids
+					rect.min_lat = float(min_lat)
+					rect.min_lon = float(min_lon)
+					rect.max_lat = float(max_lat)
+					rect.max_lon = float(max_lon)
 
-				self.db.put(key, str(rect))
+					self.db.put(key, str(rect))
 			else: # We're at an intermediate node, keep going
 				for id in ids:
 					traverse_to(level - 1, id)
@@ -173,5 +174,4 @@ class RTree:
 			traverse_to(int(root_level), key)
 		else:
 			print "No nodes on this server"
-			raise StopIteration
 
