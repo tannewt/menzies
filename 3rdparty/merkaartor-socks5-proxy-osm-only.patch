@@ -17,6 +17,37 @@ Index: QMapControl/browserimagemanager.cpp
 +	*/
  }
  
+Index: Sync/DirtyList.cpp
+===================================================================
+--- Sync/DirtyList.cpp	(revision 14049)
++++ Sync/DirtyList.cpp	(working copy)
+@@ -513,7 +513,7 @@
+ 	if (sendRequest("PUT",URL,DataIn,DataOut))
+ 	{
+ 		// chop off extra spaces, newlines etc
+-		R->setId("rel_"+QString::number(DataOut.toInt()));
++		R->setId("rel_"+QString::number(DataOut.toLongLong()));
+ 		R->setLastUpdated(MapFeature::OSMServer);
+ 		R->setVersionNumber(0);
+ 		R->layer()->remove(R);
+@@ -541,7 +541,7 @@
+ 	if (sendRequest("PUT",URL,DataIn,DataOut))
+ 	{
+ 		// chop off extra spaces, newlines etc
+-		R->setId("way_"+QString::number(DataOut.toInt()));
++		R->setId("way_"+QString::number(DataOut.toLongLong()));
+ 		R->setLastUpdated(MapFeature::OSMServer);
+ 		R->setVersionNumber(0);
+ 		R->layer()->remove(R);
+@@ -570,7 +570,7 @@
+ 	if (sendRequest("PUT",URL,DataIn,DataOut))
+ 	{
+ 		// chop off extra spaces, newlines etc
+-		Pt->setId("node_"+QString::number(DataOut.toInt()));
++		Pt->setId("node_"+QString::number(DataOut.toLongLong()));
+ 		Pt->setLastUpdated(MapFeature::OSMServer);
+ 		Pt->setVersionNumber(0);
+ 		Pt->layer()->remove(Pt);
 Index: Map/DownloadOSM.cpp
 ===================================================================
 --- Map/DownloadOSM.cpp	(revision 14049)
