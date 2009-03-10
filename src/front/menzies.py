@@ -82,7 +82,15 @@ class ClientWrapper:
 		self.force_new = False
 
 	def needs_new_connection(self):
-		return self.force_new or not self.transport.isOpen()
+		if self.force_new or not self.transport.isOpen():
+			return True
+		else:
+			try:
+				self.client.ping()
+			except:
+				print "Ping failed, creating a new client connection"
+				return True
+			return False
 
 class Menzies:
 	
