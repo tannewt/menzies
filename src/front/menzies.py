@@ -70,6 +70,7 @@ class ClientPool:
 
 	def release(self, clients):
 		for info, client in clients.items():
+			print "Releasing %s" % str(info)
 			wrapper = self.used_servers.pop(client)
 			self.free_servers[info].put(wrapper)
 
