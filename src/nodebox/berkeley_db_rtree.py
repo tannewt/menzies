@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-import pickle
+import cPickle as pickle
 
 from bsddb import db as bdb
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-tar -zcvf src.tgz src/*.conf src/common/ src/migration/*.py src/nodebox/*.py src/*.py src/relationbox/*.py src/waybox/*.py src/front/*.py
+tar -zcvf src.tgz test/test_plan.jmx src/*.conf src/common/ src/migration/*.py src/nodebox/*.py src/*.py src/relationbox/*.py src/waybox/*.py src/front/*.py
 
 echo "Copying source to gateway"
 scp src.tgz hadoop.cs.washington.edu:

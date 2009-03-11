@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import pickle
+import cPickle as pickle
 
 class Rectangle:
 	def __init__(self):

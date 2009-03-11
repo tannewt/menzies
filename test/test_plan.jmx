@@ -9,7 +9,7 @@
         <collectionProp name="Arguments.arguments">
           <elementProp name="server" elementType="Argument">
             <stringProp name="Argument.name">server</stringProp>
-            <stringProp name="Argument.value">localhost</stringProp>
+            <stringProp name="Argument.value">10.1.143.249</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="port" elementType="Argument">
@@ -19,7 +19,7 @@
           </elementProp>
           <elementProp name="menzies_path" elementType="Argument">
             <stringProp name="Argument.name">menzies_path</stringProp>
-            <stringProp name="Argument.value">/home/jason/Documents/school/uw_winter_2009/cse490h/menzies</stringProp>
+            <stringProp name="Argument.value">/home/cse490h/</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
         </collectionProp>
@@ -99,7 +99,7 @@
             <bytes>true</bytes>
           </value>
         </objProp>
-        <stringProp name="filename"></stringProp>
+        <stringProp name="filename">${menzies_path}/test/results-tree</stringProp>
       </ResultCollector>
       <hashTree/>
       <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary" enabled="true">
@@ -403,7 +403,7 @@
         </ResultCollector>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Populate" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Populate" enabled="false">
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
           <stringProp name="LoopController.loops">1</stringProp>
@@ -421,7 +421,7 @@
         <AuthManager guiclass="AuthPanel" testclass="AuthManager" testname="HTTP Authorization Manager" enabled="true">
           <collectionProp name="AuthManager.auth_list">
             <elementProp name="" elementType="Authorization">
-              <stringProp name="Authorization.url">http://localhost</stringProp>
+              <stringProp name="Authorization.url">http://10.1.143.249</stringProp>
               <stringProp name="Authorization.username">x</stringProp>
               <stringProp name="Authorization.password">x</stringProp>
               <stringProp name="Authorization.domain"></stringProp>
@@ -1225,7 +1225,7 @@
           <boolProp name="LoopController.continue_forever">false</boolProp>
           <stringProp name="LoopController.loops">1</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.num_threads">3</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <longProp name="ThreadGroup.start_time">1235345194000</longProp>
         <longProp name="ThreadGroup.end_time">1235345194000</longProp>

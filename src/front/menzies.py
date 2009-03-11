@@ -186,7 +186,6 @@ class Menzies:
 				node_set.add(node.id)
 				yield (0, node)
 			
-			
 			#get all the ways these nodes are in
 			try:
 				ways = servers[self.servers["way"]].getWaysFromNodes(list(node_set))
@@ -202,20 +201,20 @@ class Menzies:
 				if way.id not in way_set:
 					way_set.add(way.id)
 					yield (1, way)
-			
-				# get all relations this way is in
-				try:
-					relations = servers[self.servers["relation"]].getRelationsFromWay(way.id)
-				except TApplicationException, e:
-					if e.type != TApplicationException.MISSING_RESULT:
-						raise e
-					relations = []
-				
-				for relation in relations:
-					if relation.id not in relation_set:
-						relation_set.add(relation.id)
-						yield (2, relation)
-			
+
+			# get all relations the ways are in
+			try:
+				relations = servers[self.servers["relation"]].getRelationsFromWays(list(way_set))
+			except TApplicationException, e:
+				if e.type != TApplicationException.MISSING_RESULT:
+					raise e
+				relations = []
+
+			for relation in relations:
+				if relation.id not in relation_set:
+					relation_set.add(relation.id)
+					yield (2, relation)
+
 			# get all relations this node is in
 			try:
 				relations = servers[self.servers["relation"]].getRelationsFromNodes(node_set)
