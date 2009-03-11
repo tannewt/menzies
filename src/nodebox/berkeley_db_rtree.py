@@ -8,11 +8,14 @@ from bsddb import db as bdb
 from data.ttypes import *
 from rectangle import Rectangle
 
+DB_ENV = bdb.DBEnv()
+DB_ENV.open(None, bdb.DB_CREATE | bdb.DB_INIT_LOCK | bdb.DB_INIT_MPOOL | bdb.DB_THREAD)
+
 class RTree:
 	def __init__(self, filename, bucket_size=25):
 		self.bucket_size = bucket_size
 
-		self.db = bdb.DB()
+		self.db = bdb.DB(DB_ENV)
 		self.db.open(filename, "Spatial Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
 	def cleanup(self):
