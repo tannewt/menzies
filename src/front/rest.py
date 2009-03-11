@@ -629,6 +629,7 @@ if __name__=="__main__":
 	# Don't buffer stdout
 	# sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
+	port = 8001
 	if len(sys.argv) > 1:
 		server_conf = open(sys.argv[1])
 
@@ -640,7 +641,7 @@ if __name__=="__main__":
 			if line == "":
 				continue
 
-			if line in ("[Nodes]", "[Way]", "[Relation]"):
+			if line in ("[Nodes]", "[Way]", "[Relation]", "[Front]"):
 				section = line
 			elif section:
 				info = line.split(":")
@@ -652,6 +653,8 @@ if __name__=="__main__":
 					servers["way"] = info
 				elif section == "[Relation]":
 					servers["relation"] = info
+				elif section == "[Front]":
+					port = info[1]
 	else:
 		num_nodeservers = 1
 		node_servers = map(lambda x: ("localhost", 9100+x), range(num_nodeservers))
@@ -661,11 +664,10 @@ if __name__=="__main__":
 	print servers
 
 	menzies = menzies.Menzies(servers)
-	httpd = ThreadingHTTPServer(("",8001),OpenStreetMapHandler)
+	httpd = ThreadingHTTPServer(("",port),OpenStreetMapHandler)
 	try:
 		httpd.serve_forever()
 	except Exception, e:
 		print "Cleaning up"
 		menzies.cleanup()
 		raise e
-

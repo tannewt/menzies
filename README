@@ -1,1 +1,17 @@
-test
+MIGRATION
+
+1) Import the planet osm
+
+Talk about partitioning...
+
+2) Build the spatial index
+
+RUNNING THE SERVICE
+
+The service consists of a frontend server, a way server, a relation server, and a set of node servers.
+
+* front/rest.py <servers.conf> starts the frontend server
+	** servers.conf tells the frontend where to find the other servers and on what ports to communicate
+* waybox/ready_go.py starts the way server
+* relationbox/ready_go.py starts the relation server
+* nodebox/ready_go.py <port> starts a node server

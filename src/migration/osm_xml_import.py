@@ -8,10 +8,21 @@ import bz2
 from xml.sax import make_parser, handler
 
 THIS_SERVER = 2 # less than 0 for a way or relation server
-LOAD_WAYS = False
-LOAD_RELATIONS = False
-LOAD_SPATIAL = False
-LOAD_NODE_DB = False
+LOAD_WAYS = True
+LOAD_RELATIONS = True
+LOAD_SPATIAL = True
+LOAD_NODE_DB = True
+
+if len(sys.argv) < 2:
+	print "Usage: python osm_xml_import.py xml.osm[.bz2]"
+	print ""
+	print "Outputs the following files to the current directory:"
+	print "\tspatial_data.raw - The input used to create the spatial index that is used to get nodes in a bounding box"
+	print "\tmax_node_id - Holds the highest node id, used to set what the next assigned node id should be"
+	print "\tnodes.db"
+	print "\tways.db"
+	print "\trelations.db"
+	sys.exit(1)
 
 sys.path.append('common')
 sys.path.append('common/gen-py')
@@ -42,19 +53,10 @@ class FancyCounter(handler.ContentHandler):
 
 	def __init__(self):
 		self._elems = 0
-		self._attrs = 0
-		self._elem_types = {}
-		self._attr_types = {}
-
 		self._object = None
 
 	def startElement(self, name, attrs):
 		self._elems += 1
-		self._attrs += len(attrs)
-		self._elem_types[name] = self._elem_types.get(name, 0) + 1
-
-		for n in attrs.keys():
-			self._attr_types[n] = self._attr_types.get(n, 0) + 1
 
 		if name == "node":
 			self._object = None
@@ -124,7 +126,7 @@ class FancyCounter(handler.ContentHandler):
 			print "Unknown element:", name
 
 	def endElement(self, name):
-		if self._elems % 20000 == 0:
+		if self._elems % 100000 == 0:
 			print "Processed %d elements" % self._elems
 
 		# Store in Berkeley DB
@@ -148,19 +150,8 @@ class FancyCounter(handler.ContentHandler):
 			if self._object == None: return
 			relation_handler.createRelation(self._object)
 
-
-
 	def endDocument(self):
-		print "There were", self._elems, "elements."
-		print "There were", self._attrs, "attributes."
-
-		print "---ELEMENT TYPES"
-		for pair in  self._elem_types.items():
-		    print "%20s %d" % pair
-
-		print "---ATTRIBUTE TYPES"
-		for pair in  self._attr_types.items():
-		    print "%20s %d" % pair          
+		pass
 
 parser = make_parser()
 parser.setContentHandler(FancyCounter())
