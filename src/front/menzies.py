@@ -39,7 +39,7 @@ class ClientPool:
 	def __init__(self, servers):
 		self.server_info = servers
 
-		self.pool_size = 2
+		self.pool_size = 100
 
 		self.free_servers = {}
 		self.used_servers = {}
