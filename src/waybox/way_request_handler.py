@@ -133,6 +133,24 @@ class WayRequestHandler:
 				thrift_wrapper.from_string(way, data)
 				ways.append(way)
 		return ways
+	
+	def getWaysFromNodes(self, nodes):
+		cursor = self.reverse_node_index.cursor()
+		way_ids = set()
+		for node_id in nodes:
+			way_id_str_pair = cursor.get("%d"%node_id, bdb.DB_SET)
+			while way_id_str_pair:
+				way_ids.add(way_id_str_pair[1])
+				way_id_str_pair = cursor.get("%d"%node_id, bdb.DB_NEXT_DUP)
+
+		ways = []
+		for way_id_str in way_ids:
+			data = self.db.get(way_id_str)
+			if data:
+				way = Way()
+				thrift_wrapper.from_string(way, data)
+				ways.append(way)
+		return ways
 
 	def createWay(self, way):
 		self.increment_lock.acquire()

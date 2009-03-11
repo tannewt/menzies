@@ -183,39 +183,27 @@ class Menzies:
 			for node in nodes:
 				node_set.add(node.id)
 				yield (0, node)
+			
+			
+			#get all the ways these nodes are in
+			try:
+				ways = servers[self.servers["way"]].getWaysFromNodes(list(node_set))
+			except TApplicationException, e:
+				if e.type != TApplicationException.MISSING_RESULT:
+					raise e
+				ways = []
 				
-				#get all the ways this node is in
-				try:
-					ways = servers[self.servers["way"]].getWaysFromNode(node.id)
-				except TApplicationException, e:
-					if e.type != TApplicationException.MISSING_RESULT:
-						raise e
-					ways = []
-				
-				# for each of these ways
-				for way in ways:
-					for node_id in way.nodes: nodes_in_ways.add(node_id)
+			# for each of these ways
+			for way in ways:
+				for node_id in way.nodes: nodes_in_ways.add(node_id)
 
-					if way.id not in way_set:
-						way_set.add(way.id)
-						yield (1, way)
-				
-					# get all relations this way is in
-					try:
-						relations = servers[self.servers["relation"]].getRelationsFromWay(way.id)
-					except TApplicationException, e:
-						if e.type != TApplicationException.MISSING_RESULT:
-							raise e
-						relations = []
-					
-					for relation in relations:
-						if relation.id not in relation_set:
-							relation_set.add(relation.id)
-							yield (2, relation)
-				
-				# get all relations this node is in
+				if way.id not in way_set:
+					way_set.add(way.id)
+					yield (1, way)
+			
+				# get all relations this way is in
 				try:
-					relations = servers[self.servers["relation"]].getRelationsFromNode(node.id)
+					relations = servers[self.servers["relation"]].getRelationsFromWay(way.id)
 				except TApplicationException, e:
 					if e.type != TApplicationException.MISSING_RESULT:
 						raise e
@@ -225,36 +213,49 @@ class Menzies:
 					if relation.id not in relation_set:
 						relation_set.add(relation.id)
 						yield (2, relation)
+			
+			# get all relations this node is in
+			try:
+				relations = servers[self.servers["relation"]].getRelationsFromNodes(node_set)
+			except TApplicationException, e:
+				if e.type != TApplicationException.MISSING_RESULT:
+					raise e
+				relations = []
+			
+			for relation in relations:
+				if relation.id not in relation_set:
+					relation_set.add(relation.id)
+					yield (2, relation)
 
-					# get all relations this relation is in
+				# get all relations this relation is in
+				try:
+					relations2 = servers[self.servers["relation"]].getRelationsFromRelation(relation.id)
+				except TApplicationException, e:
+					if e.type != TApplicationException.MISSING_RESULT:
+						raise e
+					relations2 = []
+				
+				for relation_in_relation in relations2:
+					if relation_in_relation.id not in relation_set:
+						relation_set.add(relation_in_relation.id)
+						yield (2, relation_in_relation)
+
+		print "Fetching nodes outside the bounding box"
+		# Fetch nodes outside the bounding box that are part of ways within the bounding box
+		for node_id in nodes_in_ways:
+			if node_id not in node_set:
+				for server_info in self.node_partitioner.from_node_id(node_id):
+					server = servers[server_info]
 					try:
-						relations2 = servers[self.servers["relation"]].getRelationsFromRelation(relation.id)
+						node = server.getNode(node_id)
 					except TApplicationException, e:
 						if e.type != TApplicationException.MISSING_RESULT:
 							raise e
-						relations2 = []
-					
-					for relation_in_relation in relations2:
-						if relation_in_relation.id not in relation_set:
-							relation_set.add(relation_in_relation.id)
-							yield (2, relation_in_relation)
-
-			print "Fetching nodes outside the bounding box"
-			# Fetch nodes outside the bounding box that are part of ways within the bounding box
-			for node_id in nodes_in_ways:
-				if node_id not in node_set:
-					for server_info in self.node_partitioner.from_node_id(node_id):
-						server = servers[server_info]
-						try:
-							node = server.getNode(node_id)
-						except TApplicationException, e:
-							if e.type != TApplicationException.MISSING_RESULT:
-								raise e
-							node = None
-						if node:
-							node_set.add(node_id)
-							yield (0, node)
-							break
+						node = None
+					if node:
+						node_set.add(node_id)
+						yield (0, node)
+						break
 
 	def getNode(self, id):
 		servers = self.client_pool.acquire(self.servers["node"])

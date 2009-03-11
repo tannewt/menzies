@@ -1,5 +1,5 @@
 import sys
-import httplib
+import urllib2
 import time
 
 OSM = "--osm" in sys.argv
@@ -15,11 +15,9 @@ if not OSM:
 
 # test create
 if not OSM:
-	c = httplib.HTTPConnection(SERVER, PORT)
-	api = "0.6"
+	base_url = "http://"+SERVER+":"+PORT+"/api/0.6/"
 else:
-	c = httplib.HTTPConnection("api.openstreetmap.org",80)
-	api = "0.5"
+	base_url = "http://api.openstreetmap.org/api/0.5/"
 
 #node="""<osm><node id="-1" lat="61.8083953857422" lon="10.8497076034546" visible="true" timestamp="2005-07-30T14:27:12+01:00">
 #   <tag k="tourism" v="hotel" />
