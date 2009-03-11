@@ -17,6 +17,9 @@ from Queue import *
 import sys, os
 from bsddb import db as bdb
 
+DB_ENV = bdb.DBEnv()
+DB_ENV.open(None, bdb.DB_CREATE | bdb.DB_INIT_LOCK | bdb.DB_INIT_MPOOL | bdb.DB_THREAD)
+
 class curry:
     def __init__(self, fun, *args, **kwargs):
         self.fun = fun
@@ -139,8 +142,7 @@ class Menzies:
 
 		self.node_partitioner = StaticLatPartitioner(servers["node"])
 
-		self.db = bdb.DB()
-		#self.db.set_flags(bdb.DB_DUP)
+		self.db = bdb.DB(DB_ENV)
 		self.db.open(os.path.join("","frontend.db"),"Frontend Data", bdb.DB_BTREE, bdb.DB_CREATE)
 		if not self.db.get("next_node_id"):
 			print "Initializing next_node_id to 0"

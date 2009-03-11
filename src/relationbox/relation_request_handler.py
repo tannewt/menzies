@@ -30,15 +30,15 @@ class RelationRequestHandler:
 			print "Initializing next_id to 0"
 			self.db.put("next_id", "0")
 
-		self.reverse_node_index = bdb.DB()
+		self.reverse_node_index = bdb.DB(DB_ENV)
 		self.reverse_node_index.set_flags(bdb.DB_DUP)
 		self.reverse_node_index.open(os.path.join(data_dir,"relations_reverse_node_index.db"),"Reverse Node Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
-		self.reverse_relation_index = bdb.DB()
+		self.reverse_relation_index = bdb.DB(DB_ENV)
 		self.reverse_relation_index.set_flags(bdb.DB_DUP)
 		self.reverse_relation_index.open(os.path.join(data_dir,"relations_reverse_relation_index.db"),"Reverse Relation Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
-		self.reverse_way_index = bdb.DB()
+		self.reverse_way_index = bdb.DB(DB_ENV)
 		self.reverse_way_index.set_flags(bdb.DB_DUP)
 		self.reverse_way_index.open(os.path.join(data_dir,"relations_reverse_way_index.db"),"Reverse Relation Index", bdb.DB_BTREE, bdb.DB_CREATE)
 
