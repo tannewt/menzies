@@ -108,7 +108,7 @@ class Menzies:
 
 			transport = TSocket.TSocket(server,port)
 			transport = TTransport.TBufferedTransport(transport)
-			protocol = TBinaryProtocol.TBinaryProtocol(transport)
+			protocol = TBinaryProtocol.TBinaryProtocolAccelerated(transport)
 			client = NodeServer.Client(protocol)
 			transport.open()
 			return ClientWrapper(transport, client)
@@ -118,7 +118,7 @@ class Menzies:
 
 			transport = TSocket.TSocket(server,port)
 			transport = TTransport.TBufferedTransport(transport)
-			protocol = TBinaryProtocol.TBinaryProtocol(transport)
+			protocol = TBinaryProtocol.TBinaryProtocolAccelerated(transport)
 			client = WayServer.Client(protocol)
 			transport.open()
 			return ClientWrapper(transport, client)
@@ -128,7 +128,7 @@ class Menzies:
 
 			transport = TSocket.TSocket(server,port)
 			transport = TTransport.TBufferedTransport(transport)
-			protocol = TBinaryProtocol.TBinaryProtocol(transport)
+			protocol = TBinaryProtocol.TBinaryProtocolAccelerated(transport)
 			client = RelationServer.Client(protocol)
 			transport.open()
 			return ClientWrapper(transport, client)

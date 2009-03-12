@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sys
 sys.path.append('common/gen-py')
@@ -17,7 +18,7 @@ handler = WayRequestHandler()
 processor = WayServer.Processor(handler)
 transport = TSocket.TServerSocket(9090)
 tfactory = TTransport.TBufferedTransportFactory()
-pfactory = TBinaryProtocol.TBinaryProtocolFactory()
+pfactory = TBinaryProtocol.TBinaryProtocolAcceleratedFactory()
 
 #server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
 

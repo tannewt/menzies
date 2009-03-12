@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sys, os
 sys.path.append('common/gen-py')
@@ -24,7 +25,7 @@ handler = NodeRequestHandler()
 processor = NodeServer.Processor(handler)
 transport = TSocket.TServerSocket(port)
 tfactory = TTransport.TBufferedTransportFactory()
-pfactory = TBinaryProtocol.TBinaryProtocolFactory()
+pfactory = TBinaryProtocol.TBinaryProtocolAcceleratedFactory()
 
 #server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
 
