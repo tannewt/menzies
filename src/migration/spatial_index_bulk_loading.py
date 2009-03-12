@@ -31,7 +31,6 @@ for i in open(input_filename, "r").xreadlines():
 print "sorting %d points of spatial data by longitude" % total_entries
 subprocess.call(["sort", "-k2", "-t:", "-n", input_filename, "-o", sorted_by_lon_filename])
 
-#total_entries = 3557197
 entries_per_node = 20
 grid_size = math.ceil(math.sqrt(float(total_entries) / entries_per_node))
 entries_per_split = int(math.ceil(float(total_entries) / grid_size))
@@ -56,12 +55,16 @@ print "grid size is %d" % grid_size
 db.put("splits0", str(int(grid_size)))
 db.put("levels", "0")
 
-print "creating rectangles from splits and storing in spatial_index_tmp.db"
+print "creating rectangles from splits and storing in db"
 
 col = 0
 
 files = [os.path.join(curr_dir,f) for f in os.listdir(curr_dir)]
 files.sort()
+
+next_level_input_filename = "spatial_index_level%d.raw" % (level+1)
+next_level_input_basename = os.path.splitext(input_filename)[0]
+next_level_file = open(next_level_input_filename, "w")
 
 for fullname in files:
 	# Sort by latitude
@@ -76,6 +79,14 @@ for fullname in files:
 			rectangle = minimum_bounding_rectangle(data)
 			key = "%d-%d-%d" % (level, i / entries_per_page - 1, col)
 			db.put(key, str(rectangle))
+
+			min_lat, min_lon, max_lat, max_lon = rectangle.min_lat, rectangle.min_lon, rectangle.max_lat, rectangle.max_lon
+
+			mid_lat = (min_lat + max_lat) / 2
+			mid_lon = (min_lon + max_lon) / 2
+
+			next_level_file.write("%.10f:%.10f:%.10f:%.10f:%.10f:%.10f:%s\n" % (mid_lat, mid_lon, min_lat, min_lon, max_lat, max_lon, key))
+
 			row = 0
 			data = []
 
@@ -88,10 +99,12 @@ for fullname in files:
 	os.unlink(fullname)
 
 	col += 1
+
 os.rmdir(curr_dir)
+next_level_file.close()
 
 #########################################
-# Now load all the nodes, up to the root
+# Now load all the nodes, up to the root, recursively
 #########################################
 
 print "writing data for next level up of the index"
@@ -102,32 +115,12 @@ def load(level):
 	grid_size = int(db.get("splits%d" % (level-1)))
 	print "grid_size:", str(grid_size)
 
-
 	input_filename = "spatial_index_level%d.raw" % level
 	input_basename = os.path.splitext(input_filename)[0]
-	level2_file = open(input_filename, "w")
 
 	total_entries = 0
-
-	print "writing file to do external sort on"
-	for x in range(grid_size):
-		for y in range(grid_size):
-			key = "%d-%d-%d" % (level - 1, x, y)
-			data = db.get(key)
-			if data:
-				min_lat, min_lon, max_lat, max_lon = data.split(":")[:4]
-
-				min_lat = float(min_lat)
-				min_lon = float(min_lon)
-				max_lat = float(max_lat)
-				max_lon = float(max_lon)
-
-				mid_lat = (min_lat + max_lat) / 2
-				mid_lon = (min_lon + max_lon) / 2
-
-				total_entries += 1
-				level2_file.write("%.10f:%.10f:%.10f:%.10f:%.10f:%.10f:%s\n" % (mid_lat, mid_lon, min_lat, min_lon, max_lat, max_lon, key))
-	level2_file.close()
+	for i in open(input_filename, "r").xreadlines():
+		total_entries += 1
 
 	sorted_by_lon_filename = input_basename + "_sorted_by_lon"
 
@@ -156,6 +149,10 @@ def load(level):
 	files = [os.path.join(curr_dir,f) for f in os.listdir(curr_dir)]
 	files.sort()
 
+	next_level_input_filename = "spatial_index_level%d.raw" % (level+1)
+	next_level_input_basename = os.path.splitext(input_filename)[0]
+	next_level_file = open(next_level_input_filename, "w")
+
 	for fullname in files:
 
 		# Sort by latitude
@@ -174,6 +171,14 @@ def load(level):
 				rectangle = minimum_bounding_rectangle(data)
 				key = "%d-%d-%d" % (level, i / entries_per_page - 1, col)
 				db.put(key, str(rectangle))
+
+				min_lat, min_lon, max_lat, max_lon = rectangle.min_lat, rectangle.min_lon, rectangle.max_lat, rectangle.max_lon
+
+				mid_lat = (min_lat + max_lat) / 2
+				mid_lon = (min_lon + max_lon) / 2
+
+				next_level_file.write("%.10f:%.10f:%.10f:%.10f:%.10f:%.10f:%s\n" % (mid_lat, mid_lon, min_lat, min_lon, max_lat, max_lon, key))
+
 				row = 0
 				data = []
 
@@ -187,6 +192,8 @@ def load(level):
 	db.put("levels", str(level))
 	db.put("splits%d" % level, str(int(grid_size)))
 
+	next_level_file.close()
+
 	# Cleanup
 	os.unlink(input_filename)
 	os.unlink(sorted_by_lon_filename)
@@ -197,5 +204,7 @@ def load(level):
 
 	if grid_size > 1:
 		load(level+1)
+	else:
+		os.unlink(next_level_input_filename)
 
 load(1)
