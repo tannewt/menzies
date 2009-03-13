@@ -17,6 +17,9 @@ from Queue import *
 import sys, os
 from bsddb import db as bdb
 
+import random
+import time
+
 DB_ENV = bdb.DBEnv()
 DB_ENV.open(None, bdb.DB_CREATE | bdb.DB_INIT_LOCK | bdb.DB_INIT_MPOOL | bdb.DB_THREAD)
 
@@ -163,10 +166,11 @@ class Menzies:
 			self.client_pool.release(servers)
 
 	def _getAllInBounds(self, servers, box):
-
 		relation_set = set()
 		way_set = set()
 		node_set = set()
+		
+		seq_num = random.randint(0,1000)
 
 		nodes_in_ways = set()
 
@@ -174,55 +178,70 @@ class Menzies:
 			server = servers[server_info]
 
 			# get all nodes in the box
+			print seq_num,time.time(),"getNodesInBounds: start"
 			try:
 				nodes = server.getNodesInBounds(box)
 			except TApplicationException, e:
 				if e.type != TApplicationException.MISSING_RESULT:
 					raise e
 				nodes = []
+			print seq_num,time.time(),"getNodesInBounds: finish"
 			
 			# for each of those nodes
+			print seq_num,time.time(),"nodeYield: start"
 			for node in nodes:
 				node_set.add(node.id)
 				yield (0, node)
+			print seq_num,time.time(),"nodeYield: finish"
 			
 			#get all the ways these nodes are in
+			print seq_num,time.time(),"getWaysFromNodes: start"
 			try:
 				ways = servers[self.servers["way"]].getWaysFromNodes(list(node_set))
 			except TApplicationException, e:
 				if e.type != TApplicationException.MISSING_RESULT:
 					raise e
 				ways = []
+			print seq_num,time.time(),"getWaysFromNodes: finish"
 				
 			# for each of these ways
+			print seq_num,time.time(),"yieldWays: start"
 			for way in ways:
 				for node_id in way.nodes: nodes_in_ways.add(node_id)
 
 				if way.id not in way_set:
 					way_set.add(way.id)
 					yield (1, way)
+			print seq_num,time.time(),"yieldWays: finish"
 
 			# get all relations the ways are in
+			print seq_num,time.time(),"getRelationsFromWays: start"
 			try:
 				relations = servers[self.servers["relation"]].getRelationsFromWays(list(way_set))
 			except TApplicationException, e:
 				if e.type != TApplicationException.MISSING_RESULT:
 					raise e
 				relations = []
-
+			print seq_num,time.time(),"getRelationsFromWays: finish"
+			
+			print seq_num,time.time(),"yieldWayRelations: start"
 			for relation in relations:
 				if relation.id not in relation_set:
 					relation_set.add(relation.id)
 					yield (2, relation)
+			print seq_num,time.time(),"yieldWayRelations: finish"
 
 			# get all relations this node is in
+			print seq_num,time.time(),"getRelationsFromNodes: start"
 			try:
 				relations = servers[self.servers["relation"]].getRelationsFromNodes(node_set)
 			except TApplicationException, e:
 				if e.type != TApplicationException.MISSING_RESULT:
 					raise e
 				relations = []
+			print seq_num,time.time(),"getRelationsFromNodes: finish"
 			
+			print seq_num,time.time(),"forRelation: start"
 			for relation in relations:
 				if relation.id not in relation_set:
 					relation_set.add(relation.id)
@@ -240,9 +259,12 @@ class Menzies:
 					if relation_in_relation.id not in relation_set:
 						relation_set.add(relation_in_relation.id)
 						yield (2, relation_in_relation)
+			print seq_num,time.time(),"forRelation: finish"
 
 		print "Fetching nodes outside the bounding box"
 		# Fetch nodes outside the bounding box that are part of ways within the bounding box
+
+		print seq_num,time.time(),"getNode(s): start"
 		nodes_to_fetch = [id for id in nodes_in_ways if id not in node_set]
 		for server_info, ids in self.node_partitioner.get_node_id_sets(nodes_to_fetch).items():
 			server = servers[server_info]
@@ -257,6 +279,7 @@ class Menzies:
 				if node.id not in node_set:
 					node_set.add(node.id)
 					yield (0, node)
+		print seq_num,time.time(),"getNode(s): finish"
 
 	def getNode(self, id):
 		servers = self.client_pool.acquire(self.servers["node"])
