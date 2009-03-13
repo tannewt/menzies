@@ -243,20 +243,20 @@ class Menzies:
 
 		print "Fetching nodes outside the bounding box"
 		# Fetch nodes outside the bounding box that are part of ways within the bounding box
-		for node_id in nodes_in_ways:
-			if node_id not in node_set:
-				for server_info in self.node_partitioner.from_node_id(node_id):
-					server = servers[server_info]
-					try:
-						node = server.getNode(node_id)
-					except TApplicationException, e:
-						if e.type != TApplicationException.MISSING_RESULT:
-							raise e
-						node = None
-					if node:
-						node_set.add(node_id)
-						yield (0, node)
-						break
+		nodes_to_fetch = [id for id in nodes_in_ways if id not in node_set]
+		for server_info, ids in self.node_partitioner.get_node_id_sets(nodes_to_fetch).items():
+			server = servers[server_info]
+			try:
+				nodes = server.getNodes(ids)
+			except TApplicationException, e:
+				if e.type != TApplicationException.MISSING_RESULT:
+					raise e
+				nodes = []
+
+			for node in nodes:
+				if node.id not in node_set:
+					node_set.add(node.id)
+					yield (0, node)
 
 	def getNode(self, id):
 		servers = self.client_pool.acquire(self.servers["node"])

@@ -17,7 +17,7 @@ sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 impl = getDOMImplementation()
 log = open("rest.log", "a")
 
-class ThreadingHTTPServer(SocketServer.ThreadingTCPServer,BaseHTTPServer.HTTPServer):
+class ForkingHTTPServer(SocketServer.ForkingTCPServer,BaseHTTPServer.HTTPServer):
 	pass
 
 class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
@@ -664,7 +664,7 @@ if __name__=="__main__":
 	print servers
 
 	menzies = menzies.Menzies(servers)
-	httpd = ThreadingHTTPServer(("",port),OpenStreetMapHandler)
+	httpd = ForkingHTTPServer(("",port),OpenStreetMapHandler)
 	try:
 		httpd.serve_forever()
 	except Exception, e:
