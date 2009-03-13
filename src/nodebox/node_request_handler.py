@@ -47,8 +47,6 @@ class NodeRequestHandler:
 		for id in ids:
 			node = self.getNode(id)
 			if node: nodes.append(node)
-			else:
-				return None
 		return nodes
 
 	def getNodeVersion(self, id, version):

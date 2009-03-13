@@ -22,7 +22,8 @@ class NodePartitioner:
 	def get_node_id_sets(self, node_ids):
 		sets = dict.fromkeys(self._servers, [])
 		for id in node_ids:
-			sets[self.from_node_id(id)].append(id)
+			for server in self.from_node_id(id):
+				sets[server].append(id)
 		return sets
 
 class IdHashPartitioner (NodePartitioner):
