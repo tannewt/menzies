@@ -3,7 +3,6 @@ from node import NodeServer
 from way import WayServer
 from relation import RelationServer
 from partitioner import *
-from future import Future
 
 from data.ttypes import *
 
@@ -150,7 +149,6 @@ class Menzies:
 		if not self.db.get("next_node_id"):
 			print "Initializing next_node_id to 0"
 			self.db.put("next_node_id", "0")
-		self.increment_lock = threading.Lock()
 
 		self.next_changeset_id = 0
 
@@ -268,6 +266,9 @@ class Menzies:
 		nodes_to_fetch = [id for id in nodes_in_ways if id not in node_set]
 		for server_info, ids in self.node_partitioner.get_node_id_sets(nodes_to_fetch).items():
 			server = servers[server_info]
+
+			ids = list(ids - node_set)
+
 			try:
 				nodes = server.getNodes(ids)
 			except TApplicationException, e:
@@ -366,11 +367,11 @@ class Menzies:
 			self.client_pool.release(servers)
 
 	def _createNode(self, servers, node):
-		self.increment_lock.acquire()
+		lock = DB_ENV.lock_get(DB_ENV.lock_id(), "next_id_increment", bdb.DB_LOCK_WRITE)
 		next_id = long(self.db.get("next_node_id"))
 		self.db.delete("next_node_id")
 		self.db.put("next_node_id", "%d"%(next_id+1))
-		self.increment_lock.release()
+		DB_ENV.lock_put(lock)
 
 		node.id = next_id
 		print "next_node_id: ", self.db.get("next_node_id")

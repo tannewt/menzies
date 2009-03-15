@@ -5,7 +5,6 @@
 
 from bsddb import db as bdb
 
-import threading
 import sys, os
 sys.path.append('../common')
 sys.path.append('../common/gen-py')
@@ -33,8 +32,6 @@ class WayRequestHandler:
 		self.reverse_node_index = bdb.DB(DB_ENV)
 		self.reverse_node_index.set_flags(bdb.DB_DUP)
 		self.reverse_node_index.open(os.path.join(data_dir,"ways_reverse_node_index.db"),"Reverse Node Index", bdb.DB_BTREE, bdb.DB_CREATE)
-
-		self.increment_lock = threading.Lock()
 
 		#self.debug_print_db()
 		#self.debug_print_reverse_node_index()
@@ -153,11 +150,11 @@ class WayRequestHandler:
 		return ways
 
 	def createWay(self, way):
-		self.increment_lock.acquire()
+		lock = DB_ENV.lock_get(DB_ENV.lock_id(), "next_id_increment", bdb.DB_LOCK_WRITE)
 		next_id = long(self.db.get("next_id"))
 		self.db.delete("next_id")
 		self.db.put("next_id", "%d"%(next_id+1))
-		self.increment_lock.release()	
+		DB_ENV.lock_put(lock)
 
 		way.id = next_id
 		way.version = 1

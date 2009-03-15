@@ -5,7 +5,6 @@
 
 from bsddb import db as bdb
 
-import threading
 import sys, os
 sys.path.append('../common')
 sys.path.append('../common/gen-py')
@@ -41,8 +40,6 @@ class RelationRequestHandler:
 		self.reverse_way_index = bdb.DB(DB_ENV)
 		self.reverse_way_index.set_flags(bdb.DB_DUP)
 		self.reverse_way_index.open(os.path.join(data_dir,"relations_reverse_way_index.db"),"Reverse Relation Index", bdb.DB_BTREE, bdb.DB_CREATE)
-
-		self.increment_lock = threading.Lock()
 
 		#self.debug_print_db()
 
@@ -202,11 +199,11 @@ class RelationRequestHandler:
 		return relations
 
 	def createRelation(self, relation):
-		self.increment_lock.acquire()
+		lock = DB_ENV.lock_get(DB_ENV.lock_id(), "next_id_increment", bdb.DB_LOCK_WRITE)
 		next_id = long(self.db.get("next_id"))
 		self.db.delete("next_id")
 		self.db.put("next_id", "%d"%(next_id+1))
-		self.increment_lock.release()	
+		DB_ENV.lock_put(lock)
 
 		relation.id = next_id
 		relation.version = 1
