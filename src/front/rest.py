@@ -12,6 +12,7 @@ import menzies
 from xml.dom.minidom import parseString,getDOMImplementation
 from xml.dom import Node
 
+# Don't buffer stdout
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
 impl = getDOMImplementation()
@@ -25,9 +26,6 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 
 	def log_message(self, format, *args):
 		"""Log an arbitrary message.
-
-		This is used by all other logging functions.  Override
-		it if you have specific logging wishes.
 
 		The first argument, FORMAT, is a format string for the
 		message to be logged.  If the format string contains
@@ -243,7 +241,6 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			auth = base64.b64decode(self.headers.dict["authorization"].split()[1])
 			user,passwd = auth.split(":")
 			print "user",user,"passwd",passwd
-			sys.stdout.flush()
 		else:
 			self.send_response(401)
 			self.send_header("WWW-Authenticate", "Basic realm=\"menzies\"")
@@ -254,25 +251,30 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		if bits[0] == "node":
 			if bits[1]=="create":
 				node = self.node_from_xml(xml_in)
+				node.user = user
 				print "createNode(",node,")"
 				new_id = menzies.createNode(node)
 			else:
 				new_id = long(bits[1])
 				print "editNode(",new_id,")"
 				node = self.node_from_xml(xml_in)
+				node.user = user
 				version = menzies.editNode(node)
 		elif bits[0] == "way":
 			if bits[1]=="create":
 				way = self.way_from_xml(xml_in)
+				way.user = user
 				print "createWay(",way,")"
 				new_id = menzies.createWay(way)
 			else:
 				new_id = long(bits[1])
 				print "editWay(",new_id,")"
 				way = self.way_from_xml(xml_in)
+				way.user = user
 				version = menzies.editWay(way)
 		elif bits[0] == "relation" and bits[1]=="create":
 			relation = self.relation_from_xml(xml_in)
+			relation.user = user
 			print "createRelation(",relation,")"
 			new_id = menzies.createRelation(relation)
 		elif bits[0] == "changeset":
@@ -298,7 +300,6 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	def do_GET(self):
 		bits,args = self.parse_path()
 		print "headers",self.headers.headers,"path",self.path
-		sys.stdout.flush()
 		if bits[0]=="node":
 			print bits
 			if len(bits)==2:
@@ -626,39 +627,30 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write(str(version))
 
 if __name__=="__main__":
-	# Don't buffer stdout
-	# sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+	server_conf = open(sys.argv[1])
 
-	port = 8001
-	if len(sys.argv) > 1:
-		server_conf = open(sys.argv[1])
+	servers = {}
+	servers["node"] = []
 
-		servers = {}
-		servers["node"] = []
+	for line in server_conf.xreadlines():
+		line = line.strip()
+		if line == "":
+			continue
 
-		for line in server_conf.xreadlines():
-			line = line.strip()
-			if line == "":
-				continue
-
-			if line in ("[Nodes]", "[Way]", "[Relation]", "[Front]"):
-				section = line
-			elif section:
-				info = line.split(":")
-				info[1] = int(info[1])
-				info = tuple(info)
-				if section == "[Nodes]":
-					servers["node"].append(info)
-				elif section == "[Way]":
-					servers["way"] = info
-				elif section == "[Relation]":
-					servers["relation"] = info
-				elif section == "[Front]":
-					port = info[1]
-	else:
-		num_nodeservers = 1
-		node_servers = map(lambda x: ("localhost", 9100+x), range(num_nodeservers))
-		servers={"node": node_servers,"way":('localhost',9090),"relation":('localhost',9092)}
+		if line in ("[Nodes]", "[Way]", "[Relation]", "[Front]"):
+			section = line
+		elif section:
+			info = line.split(":")
+			info[1] = int(info[1])
+			info = tuple(info)
+			if section == "[Nodes]":
+				servers["node"].append(info)
+			elif section == "[Way]":
+				servers["way"] = info
+			elif section == "[Relation]":
+				servers["relation"] = info
+			elif section == "[Front]":
+				port = info[1]
 
 	print "Read server configuration:"
 	print servers

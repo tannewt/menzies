@@ -277,9 +277,8 @@ class Menzies:
 				nodes = []
 
 			for node in nodes:
-				if node.id not in node_set:
-					node_set.add(node.id)
-					yield (0, node)
+				node_set.add(node.id)
+				yield (0, node)
 		print seq_num,time.time(),"getNode(s): finish"
 
 	def getNode(self, id):
