@@ -19,7 +19,8 @@ except:
 	from xml.dom.minidom import parseString,getDOMImplementation
 	from xml.dom import Node
 	def toxml(node):
-		return node.toxml()
+		return node.toxml().encode("utf-8")
+	print "Using slow minidom.  Install libxml2dom for much better performance."
 
 # Don't buffer stdout
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
@@ -133,14 +134,15 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		node.setAttribute("id",str(o.id))
 		node.setAttribute("lat",str(o.lat))
 		node.setAttribute("lon",str(o.lon))
+		if o.user: node.setAttribute("user",o.user.decode("utf-8"))
 		if o.visible:
 			node.setAttribute("visible","true")
 		else:
 			node.setAttribute("visible","false")
 		for tag in o.tags:
 			t = doc.createElement("tag")
-			t.setAttribute("k",tag)
-			t.setAttribute("v",o.tags[tag])
+			t.setAttribute("k",tag.decode("utf-8"))
+			t.setAttribute("v",o.tags[tag].decode("utf-8"))
 			node.appendChild(t)
 		return node
 	
@@ -152,7 +154,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	def way_to_xml(self, doc, o):
 		way = doc.createElement("way")
 		way.setAttribute("id",str(o.id))
-		if o.user: way.setAttribute("user",o.user)
+		if o.user: way.setAttribute("user",o.user.decode("utf-8"))
 		if o.visible:
 			way.setAttribute("visible","true")
 		else:
@@ -163,8 +165,8 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			way.appendChild(nd)
 		for tag in o.tags:
 			t = doc.createElement("tag")
-			t.setAttribute("k",tag)
-			t.setAttribute("v",o.tags[tag])
+			t.setAttribute("k",tag.decode("utf-8"))
+			t.setAttribute("v",o.tags[tag].decode("utf-8"))
 			way.appendChild(t)
 		return way
 
@@ -177,7 +179,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	def relation_to_xml(self, doc, o):
 		relation = doc.createElement("relation")
 		relation.setAttribute("id",str(o.id))
-		if o.user: relation.setAttribute("user",o.user)
+		if o.user: relation.setAttribute("user",o.user.decode("utf-8"))
 		if o.visible:
 			relation.setAttribute("visible","true")
 		else:
@@ -198,8 +200,8 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		if o.tags:
 			for tag in o.tags:
 				t = doc.createElement("tag")
-				t.setAttribute("k",tag)
-				t.setAttribute("v",o.tags[tag])
+				t.setAttribute("k",tag.decode("utf-8"))
+				t.setAttribute("v",o.tags[tag].decode("utf-8"))
 				relation.appendChild(t)
 		return relation	
 	
@@ -305,6 +307,15 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		self.send_header("Content-length", len(str(id)))
 		self.end_headers()
 		self.wfile.write(str(new_id))
+
+	'''
+	def do_GET(self):
+		import cProfile as profile
+		profiler = profile.Profile()
+		profiler.runcall(self._do_GET)
+		profiler.print_stats()
+		profiler.dump_stats("x.pstat")
+	'''
 
 	def do_GET(self):
 		bits,args = self.parse_path()
