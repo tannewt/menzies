@@ -1,3 +1,12 @@
+DEPENDENCIES
+
+Python modules required by all servers:
+	bsddb
+	thrift
+
+Python modules required by front/rest.py:
+	libxml2dom (optional, but is a huge performance boost)
+
 MIGRATION
 
 1) Import the planet osm
