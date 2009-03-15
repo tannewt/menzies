@@ -9,8 +9,17 @@ sys.path.append("common/gen-py/")
 import data.ttypes as data
 import menzies
 
-from xml.dom.minidom import parseString,getDOMImplementation
-from xml.dom import Node
+try:
+	from libxml2dom import parseString,getDOMImplementation
+	from libxml2dom import Node
+	print "Using fast libxml2dom implementation"
+	def toxml(node):
+		return node.toString()
+except:
+	from xml.dom.minidom import parseString,getDOMImplementation
+	from xml.dom import Node
+	def toxml(node):
+		return node.toxml()
 
 # Don't buffer stdout
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
@@ -312,7 +321,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					print n
 					root.appendChild(self.node_to_xml(doc,n))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -332,7 +341,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for node in n:
 						root.appendChild(self.node_to_xml(doc,node))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -354,7 +363,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(toxml(doc))
 				else:
 					self.send_response(410)
 					self.end_headers()					
@@ -369,7 +378,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for relation in relations:
 						root.appendChild(self.relation_to_xml(doc, relation))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -389,7 +398,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					print n
 					root.appendChild(self.node_to_xml(doc, n))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -409,7 +418,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					print w
 					root.appendChild(self.way_to_xml(doc,w))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -429,7 +438,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for way in ways:
 						root.appendChild(self.way_to_xml(doc, way))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -451,7 +460,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for node in osm.nodes:
 						root.appendChild(self.node_to_xml(doc, node))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -473,7 +482,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(toxml(doc))
 				else:
 					self.send_response(410)
 					self.end_headers()	
@@ -488,7 +497,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					print way
 					root.appendChild(self.way_to_xml(doc, way))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -509,7 +518,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					print relation
 					root.appendChild(self.relation_to_xml(doc, relation))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -529,7 +538,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for relation in relations:
 						root.appendChild(self.relation_to_xml(doc, relation))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -553,7 +562,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for node in osm.nodes:
 						root.appendChild(self.node_to_xml(doc, node))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -586,9 +595,8 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					root.appendChild(self.relation_to_xml(doc, obj))
 
 			try:
-				xml_str = doc.toxml()
+				xml_str = toxml(doc)
 			except Exception, e:
-				print str(osm)
 				print e
 				print "Failed to convert document to XML"
 				self.send_response(500)

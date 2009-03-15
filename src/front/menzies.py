@@ -268,6 +268,8 @@ class Menzies:
 			server = servers[server_info]
 
 			ids = list(ids - node_set)
+			if len(ids) == 0:
+				continue
 
 			try:
 				nodes = server.getNodes(ids)
