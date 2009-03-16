@@ -167,7 +167,8 @@ class Menzies:
 		relation_set = set()
 		way_set = set()
 		node_set = set()
-		
+
+		random.seed(os.getpid())
 		seq_num = random.randint(0,1000)
 
 		nodes_in_ways = set()
