@@ -9,9 +9,20 @@ sys.path.append("common/gen-py/")
 import data.ttypes as data
 import menzies
 
-from xml.dom.minidom import parseString,getDOMImplementation
-from xml.dom import Node
+try:
+	from libxml2dom import parseString,getDOMImplementation
+	from libxml2dom import Node
+	print "Using fast libxml2dom implementation"
+	def toxml(node):
+		return node.toString()
+except:
+	from xml.dom.minidom import parseString,getDOMImplementation
+	from xml.dom import Node
+	def toxml(node):
+		return node.toxml().encode("utf-8")
+	print "Using slow minidom.  Install libxml2dom for much better performance."
 
+# Don't buffer stdout
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
 impl = getDOMImplementation()
@@ -25,9 +36,6 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 
 	def log_message(self, format, *args):
 		"""Log an arbitrary message.
-
-		This is used by all other logging functions.  Override
-		it if you have specific logging wishes.
 
 		The first argument, FORMAT, is a format string for the
 		message to be logged.  If the format string contains
@@ -126,14 +134,15 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		node.setAttribute("id",str(o.id))
 		node.setAttribute("lat",str(o.lat))
 		node.setAttribute("lon",str(o.lon))
+		if o.user: node.setAttribute("user",o.user.decode("utf-8"))
 		if o.visible:
 			node.setAttribute("visible","true")
 		else:
 			node.setAttribute("visible","false")
 		for tag in o.tags:
 			t = doc.createElement("tag")
-			t.setAttribute("k",tag)
-			t.setAttribute("v",o.tags[tag])
+			t.setAttribute("k",tag.decode("utf-8"))
+			t.setAttribute("v",o.tags[tag].decode("utf-8"))
 			node.appendChild(t)
 		return node
 	
@@ -145,7 +154,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	def way_to_xml(self, doc, o):
 		way = doc.createElement("way")
 		way.setAttribute("id",str(o.id))
-		if o.user: way.setAttribute("user",o.user)
+		if o.user: way.setAttribute("user",o.user.decode("utf-8"))
 		if o.visible:
 			way.setAttribute("visible","true")
 		else:
@@ -156,8 +165,8 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			way.appendChild(nd)
 		for tag in o.tags:
 			t = doc.createElement("tag")
-			t.setAttribute("k",tag)
-			t.setAttribute("v",o.tags[tag])
+			t.setAttribute("k",tag.decode("utf-8"))
+			t.setAttribute("v",o.tags[tag].decode("utf-8"))
 			way.appendChild(t)
 		return way
 
@@ -170,7 +179,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 	def relation_to_xml(self, doc, o):
 		relation = doc.createElement("relation")
 		relation.setAttribute("id",str(o.id))
-		if o.user: relation.setAttribute("user",o.user)
+		if o.user: relation.setAttribute("user",o.user.decode("utf-8"))
 		if o.visible:
 			relation.setAttribute("visible","true")
 		else:
@@ -191,8 +200,8 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		if o.tags:
 			for tag in o.tags:
 				t = doc.createElement("tag")
-				t.setAttribute("k",tag)
-				t.setAttribute("v",o.tags[tag])
+				t.setAttribute("k",tag.decode("utf-8"))
+				t.setAttribute("v",o.tags[tag].decode("utf-8"))
 				relation.appendChild(t)
 		return relation	
 	
@@ -243,7 +252,6 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			auth = base64.b64decode(self.headers.dict["authorization"].split()[1])
 			user,passwd = auth.split(":")
 			print "user",user,"passwd",passwd
-			sys.stdout.flush()
 		else:
 			self.send_response(401)
 			self.send_header("WWW-Authenticate", "Basic realm=\"menzies\"")
@@ -254,25 +262,30 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		if bits[0] == "node":
 			if bits[1]=="create":
 				node = self.node_from_xml(xml_in)
+				node.user = user
 				print "createNode(",node,")"
 				new_id = menzies.createNode(node)
 			else:
 				new_id = long(bits[1])
 				print "editNode(",new_id,")"
 				node = self.node_from_xml(xml_in)
+				node.user = user
 				version = menzies.editNode(node)
 		elif bits[0] == "way":
 			if bits[1]=="create":
 				way = self.way_from_xml(xml_in)
+				way.user = user
 				print "createWay(",way,")"
 				new_id = menzies.createWay(way)
 			else:
 				new_id = long(bits[1])
 				print "editWay(",new_id,")"
 				way = self.way_from_xml(xml_in)
+				way.user = user
 				version = menzies.editWay(way)
 		elif bits[0] == "relation" and bits[1]=="create":
 			relation = self.relation_from_xml(xml_in)
+			relation.user = user
 			print "createRelation(",relation,")"
 			new_id = menzies.createRelation(relation)
 		elif bits[0] == "changeset":
@@ -295,10 +308,18 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		self.end_headers()
 		self.wfile.write(str(new_id))
 
+	'''
+	def do_GET(self):
+		import cProfile as profile
+		profiler = profile.Profile()
+		profiler.runcall(self._do_GET)
+		profiler.print_stats()
+		profiler.dump_stats("x.pstat")
+	'''
+
 	def do_GET(self):
 		bits,args = self.parse_path()
 		print "headers",self.headers.headers,"path",self.path
-		sys.stdout.flush()
 		if bits[0]=="node":
 			print bits
 			if len(bits)==2:
@@ -311,7 +332,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					print n
 					root.appendChild(self.node_to_xml(doc,n))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -331,7 +352,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for node in n:
 						root.appendChild(self.node_to_xml(doc,node))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -353,7 +374,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(toxml(doc))
 				else:
 					self.send_response(410)
 					self.end_headers()					
@@ -368,7 +389,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for relation in relations:
 						root.appendChild(self.relation_to_xml(doc, relation))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -388,7 +409,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					print n
 					root.appendChild(self.node_to_xml(doc, n))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -408,7 +429,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					print w
 					root.appendChild(self.way_to_xml(doc,w))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -428,7 +449,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for way in ways:
 						root.appendChild(self.way_to_xml(doc, way))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -450,7 +471,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for node in osm.nodes:
 						root.appendChild(self.node_to_xml(doc, node))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -472,7 +493,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.end_headers()
-					self.wfile.write(doc.toxml())
+					self.wfile.write(toxml(doc))
 				else:
 					self.send_response(410)
 					self.end_headers()	
@@ -487,7 +508,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					print way
 					root.appendChild(self.way_to_xml(doc, way))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -508,7 +529,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					print relation
 					root.appendChild(self.relation_to_xml(doc, relation))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -528,7 +549,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for relation in relations:
 						root.appendChild(self.relation_to_xml(doc, relation))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -552,7 +573,7 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					for node in osm.nodes:
 						root.appendChild(self.node_to_xml(doc, node))
 
-					xml_str = doc.toxml()
+					xml_str = toxml(doc)
 					self.send_response(200)
 					self.send_header("Content-type", "text/xml")
 					self.send_header("Content-length", str(len(xml_str)))
@@ -585,9 +606,8 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 					root.appendChild(self.relation_to_xml(doc, obj))
 
 			try:
-				xml_str = doc.toxml()
+				xml_str = toxml(doc)
 			except Exception, e:
-				print str(osm)
 				print e
 				print "Failed to convert document to XML"
 				self.send_response(500)
@@ -626,39 +646,30 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write(str(version))
 
 if __name__=="__main__":
-	# Don't buffer stdout
-	# sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+	server_conf = open(sys.argv[1])
 
-	port = 8001
-	if len(sys.argv) > 1:
-		server_conf = open(sys.argv[1])
+	servers = {}
+	servers["node"] = []
 
-		servers = {}
-		servers["node"] = []
+	for line in server_conf.xreadlines():
+		line = line.strip()
+		if line == "":
+			continue
 
-		for line in server_conf.xreadlines():
-			line = line.strip()
-			if line == "":
-				continue
-
-			if line in ("[Nodes]", "[Way]", "[Relation]", "[Front]"):
-				section = line
-			elif section:
-				info = line.split(":")
-				info[1] = int(info[1])
-				info = tuple(info)
-				if section == "[Nodes]":
-					servers["node"].append(info)
-				elif section == "[Way]":
-					servers["way"] = info
-				elif section == "[Relation]":
-					servers["relation"] = info
-				elif section == "[Front]":
-					port = info[1]
-	else:
-		num_nodeservers = 1
-		node_servers = map(lambda x: ("localhost", 9100+x), range(num_nodeservers))
-		servers={"node": node_servers,"way":('localhost',9090),"relation":('localhost',9092)}
+		if line in ("[Nodes]", "[Way]", "[Relation]", "[Front]"):
+			section = line
+		elif section:
+			info = line.split(":")
+			info[1] = int(info[1])
+			info = tuple(info)
+			if section == "[Nodes]":
+				servers["node"].append(info)
+			elif section == "[Way]":
+				servers["way"] = info
+			elif section == "[Relation]":
+				servers["relation"] = info
+			elif section == "[Front]":
+				port = info[1]
 
 	print "Read server configuration:"
 	print servers

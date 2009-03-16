@@ -2,15 +2,24 @@
 import sys
 import os
 sys.path.append(os.getcwd())
+sys.path.append("../src/nodebox")
+sys.path.append("../src/common/gen-py")
+sys.path.append("../src/common")
 
 from bsddb import db as bdb
+
+from berkeley_db_rtree import *
+from data.ttypes import *
 
 if len(sys.argv)==1:
 	print sys.argv[0],"<db file>"
 	sys.exit(1)
 
-db = bdb.DB()
-db.open(sys.argv[1],"Spatial Index", bdb.DB_BTREE, 0)
+tree = RTree(sys.argv[1])
+db = tree.db
+node = Node()
+node.lat = 8.0
+node.lon = 38.0
 
 import goocanvas
 import gtk
@@ -106,6 +115,7 @@ root.connect("button-release-event",up)
 root.connect("motion-notify-event",move)
 
 layers = {}
+
 for layer in range(lowest,num_layers+lowest):
 	splits = int(db.get("splits%d" % layer))
 	layers[layer] = []
@@ -131,6 +141,34 @@ for layer in range(lowest,num_layers+lowest):
 			if layer!=current_layer:
 				rect.props.visibility = goocanvas.ITEM_HIDDEN
 			layers[layer].append(rect)
+
+traversals = 0
+for layer, bounds in tree.traverse(node):
+	traversals += 1
+	if layer == 0:
+		continue
+
+	min_lat = bounds.min_lat
+	max_lat = bounds.max_lat
+	min_lon = bounds.min_lon
+	max_lon = bounds.max_lon
+	min_lat += 90
+	max_lat += 90
+	min_lon += 180
+	max_lon += 180
+	
+	min_lat = 180 - min_lat
+	max_lat = 180 - max_lat
+	
+	width = max_lon-min_lon
+	height = min_lat-max_lat
+	
+	#print min_lat, min_lon, width, height
+	rect = goocanvas.Rect(parent=root, x=min_lon, y=min_lat-height, width=width, height=height, fill_color_rgba=0xff0000f0, line_width=0)
+	if layer!=current_layer:
+		rect.props.visibility = goocanvas.ITEM_HIDDEN
+	layers[layer].append(rect)
+print "Took %d traversals" % traversals
 
 def output(button):
 	img = cairo.ImageSurface(cairo.FORMAT_ARGB32,3600,1800)
