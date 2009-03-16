@@ -93,31 +93,31 @@ print sum_all
 
 print "drawing to edits.svg"
 import cairo
+import rsvg
 
 max_total = math.log(max_total)
-surface = cairo.SVGSurface("edits.svg",360,180*24)
+surface = cairo.SVGSurface("edits.svg",360*2,180*12)
 context = cairo.Context(surface)
 
+world = rsvg.Handle("scripts/world.svg")
+
+print "width",world.props.width
+print "height",world.props.height
+
 for hour in range(24):
-	context.set_line_width(0.1)
-	context.set_source_rgb(0.0,0.0,0.0)
-	context.rectangle(0,180*hour,360,180)
-	context.stroke()
+	world.render_cairo(context)
 	
 	for timezone in range(24):
 		this_time = abs(timezone+hour+12)%24
 		if this_time < 6 or this_time > 18:
-			context.set_source_rgba(0.5,0.5,0.5)
-		else:
-			context.set_source_rgba(1.0,1.0,1.0)
-		
-		context.rectangle(timezone*360/24-0.1,180*hour,360/24+0.2,180)
-		context.fill()
+			context.set_source_rgba(0.0,0.0,0.0,0.5)
+			context.rectangle(timezone*360/24,0,360/24,180)
+			context.fill()
 	
 	
 	context.set_source_rgb(0.0,0.0,0.0)
 	context.set_line_width(0.0)
-	context.move_to(0,180*(hour+1))
+	context.move_to(0,180)
 	context.show_text(str(hour))
 	
 	for x in range(360):
@@ -126,8 +126,12 @@ for hour in range(24):
 			if v!=0:
 				p = 1-math.log(float(v))/max_total
 				context.set_source_rgb(1.0,p,p)
-				context.rectangle(x,y+180*hour,1,1)
+				context.rectangle(x,y,1,1)
 				context.fill()
+	
+	context.translate(0, 180)
+	if hour == 11:
+		context.translate(360, -12*180)
 	
 	#context.set_source_rgb(0.0,0.0,0.0)
 	#i = 0

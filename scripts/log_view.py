@@ -3,6 +3,7 @@ import cairo
 
 PIXEL_WIDTH = 900
 SEC_WIDTH = 90
+LABEL_HEIGHT = 10
 HEIGHT = 20
 PADDING = 2
 
@@ -48,9 +49,18 @@ for fn in sys.argv[1:]:
     #print seq, time, point, end
     max_time = max(max_time, time)
   
-  img = cairo.SVGSurface(fn.rsplit(".",1)[0]+".svg",PIXEL_WIDTH,HEIGHT*len(req_order)+PADDING*(len(req_order)-1))
+  total_height = HEIGHT*len(req_order)+PADDING*len(req_order)+LABEL_HEIGHT
+  img = cairo.SVGSurface(fn.rsplit(".",1)[0]+".svg",PIXEL_WIDTH,total_height)
   context = cairo.Context(img)
-  offset = 0
+  context.set_line_width(0.5)
+  for i in range(0,90,10):
+  	x = i*(PIXEL_WIDTH/SEC_WIDTH)
+  	context.move_to(x,LABEL_HEIGHT)
+  	context.show_text(" "+ str(i)+" seconds")
+  	context.move_to(x,0)
+  	context.line_to(x,total_height)
+  	context.stroke()
+  offset = LABEL_HEIGHT + PADDING
   for req in req_order:
     for point,start,end in requests[req]:
       context.set_source_rgb(*COLORS[point])
