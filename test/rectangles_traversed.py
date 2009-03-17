@@ -18,8 +18,8 @@ if len(sys.argv)==1:
 tree = RTree(sys.argv[1])
 db = tree.db
 node = Node()
-node.lat = 8.0
-node.lon = 38.0
+node.lat = -5.0
+node.lon = -45.0
 
 import goocanvas
 import gtk

@@ -13,6 +13,7 @@ from data.ttypes import *
 import thrift_wrapper
 
 DB_ENV = bdb.DBEnv()
+DB_ENV.set_cachesize(0, 512*(1<<20))
 DB_ENV.open(None, bdb.DB_CREATE | bdb.DB_INIT_LOCK | bdb.DB_INIT_MPOOL | bdb.DB_THREAD)
 
 class RelationRequestHandler:

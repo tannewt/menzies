@@ -10,6 +10,7 @@ from berkeley_db_rtree import RTree
 import thrift_wrapper
 
 DB_ENV = bdb.DBEnv()
+DB_ENV.set_cachesize(3, 0)
 DB_ENV.open(None, bdb.DB_CREATE | bdb.DB_INIT_LOCK | bdb.DB_INIT_MPOOL | bdb.DB_THREAD)
 
 class NodeRequestHandler:

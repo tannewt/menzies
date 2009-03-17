@@ -62,7 +62,9 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		node.lat = float(e.getAttribute("lat"))
 		node.lon = float(e.getAttribute("lon"))
 		node.visible = e.getAttribute("visible")=="true"
-		node.user = e.getAttribute("user").encode("utf-8")
+		node.user = e.getAttribute("user")
+		if node.user:
+			node.user = node.user.encode("utf-8")
 		#node.timestamp = e.getAttribute("timestamp")
 		node.timestamp = 9999
 		node.tags = {}
@@ -79,7 +81,9 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		way = data.Way()
 		way.id = long(e.getAttribute("id"))
 		way.visible = e.getAttribute("visible")=="true"
-		way.user = e.getAttribute("user").encode("utf-8")
+		way.user = e.getAttribute("user")
+		if way.user:
+			way.user = way.user.encode("utf-8")
 		#way.timestamp = e.getAttribute("timestamp")
 		way.timestamp = 9999
 		way.tags = {}
@@ -99,7 +103,9 @@ class OpenStreetMapHandler (BaseHTTPServer.BaseHTTPRequestHandler):
 		relation = data.Relation()
 		relation.id = long(e.getAttribute("id"))
 		relation.visible = e.getAttribute("visible")=="true"
-		relation.user = e.getAttribute("user").encode("utf-8")
+		relation.user = e.getAttribute("user")
+		if relation.user:
+			relation.user = relation.user.encode("utf-8")
 		#relation.timestamp = e.getAttribute("timestamp")
 		relation.timestamp = 9999
 		relation.tags = {}
